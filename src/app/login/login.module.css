@@ -8,26 +8,27 @@
 }
 
 .logoContainer {
-  flex: 1;
+  
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .logo {
-  max-width: 250px;
+  max-width: 350px;
   height: auto;
 }
 
 .formContainer {
-  flex: 1;
-  max-width: 400px;
+   background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  height: 500px;
   display: flex;
   flex-direction: column;
-  padding: 2rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #fff;
+  align-items: center;
 }
 
 .input {
@@ -65,4 +66,36 @@
   text-decoration: underline;
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+.button{
+  background-color: #0e2433;
+  color:#fff; 
+  padding:.95rem 1.2rem; 
+  border-radius:36px; 
+  border:none; 
+  cursor:pointer; 
+  font-weight:700;
+}
+.inputContainer {
+  
+  position: relative;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.inputContainer .icon {
+  position: absolute;
+  left: 12px;
+  top: 35%;
+  transform: translateY(-50%);
+  color: #0e2433; 
+}
+
+.inputContainer input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem; 
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
