@@ -83,7 +83,7 @@ return (
     <button className={styles.button}>Iniciar sesión</button>
       <div className={styles.linksContainer}>
     <a href="/recuperar1" className={styles.link}>¿Olvidaste tu contraseña?</a>
-    <a href="/recuperar2" className={styles.link}>¿Crear agencia Virtual?</a>
+    <a href="/registro" className={styles.link}>¿Crear agencia Virtual?</a>
     <a href="/recuperar3" className={styles.link}>¿Olvidaste tu correo electrónico de Agencia Virtual?</a>
   </div>
   </form>
