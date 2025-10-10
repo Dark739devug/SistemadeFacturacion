@@ -30,9 +30,9 @@ return (
       fill="none"  
       stroke="currentColor" 
       className={styles.icon}
-       stroke-width="1.75"  
-       stroke-linecap="round"  
-       stroke-linejoin="round"  
+       strokewidth="1.75"  
+       strokeLinecap="round"  
+       strokeLinejoin="round"  
        class="icon icon-tabler icons-tabler-outline icon-tabler-user">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
@@ -59,8 +59,8 @@ return (
       fill="none"  
       stroke="currentColor"  
       strokeWidth="2"  
-      stroke-linecap="round"  
-      stroke-linejoin="round"  
+      strokeLinecap="round"  
+      strokeLinejoin="round"  
       class="icon icon-tabler icons-tabler-outline icon-tabler-lock-password">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" />
@@ -83,7 +83,7 @@ return (
     <button className={styles.button}>Iniciar sesión</button>
       <div className={styles.linksContainer}>
     <a href="/recuperar1" className={styles.link}>¿Olvidaste tu contraseña?</a>
-    <a href="/registro" className={styles.link}>¿Crear agencia Virtual?</a>
+    <a href="/registro" className={styles.link}>¿Crear  cuenta?</a>
     <a href="/recuperar3" className={styles.link}>¿Olvidaste tu correo electrónico de Agencia Virtual?</a>
   </div>
   </form>

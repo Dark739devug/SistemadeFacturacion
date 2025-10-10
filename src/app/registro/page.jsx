@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from './crear.module.css';
+import styles from './registro.module.css';
 
 export default function CrearAgencia() {
   const router = useRouter();
