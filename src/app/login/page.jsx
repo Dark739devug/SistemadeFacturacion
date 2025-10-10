@@ -7,11 +7,10 @@ import styles from './login.module.css';
 export default function Login() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    NIT: '',
+    correo: '',
     contraseña: ''
-  
-});
-
+  });
+  const [showPassword, setShowPassword] = useState(false);
 
 return (
 <div className={styles.loginContainer}>
@@ -20,74 +19,66 @@ return (
   </div>
 
   <form  className={styles.formContainer}>
-    <h2 className={styles.title}>Iniciar Sesión</h2>
-    <div className={styles.inputContainer}> 
-    
-      <svg  xmlns="http://www.w3.org/2000/svg"  
-      width="24"  
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none"  
-      stroke="currentColor" 
-      className={styles.icon}
-       strokewidth="1.75"  
-       strokeLinecap="round"  
-       strokeLinejoin="round"  
-       class="icon icon-tabler icons-tabler-outline icon-tabler-user">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-        <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-        </svg>
-         
-    <input
-      type="text"
-      name="Usuario"
-      placeholder="Usuario"
-      // value={formData.Usuario}
-      //onChange={handleChange}
-      required
-      className={styles.input}
-    />
+    <div className={styles.formHeader}>
+      <h2 className={styles.formTitle}>Accede a tu FacturaGuate</h2>
+      <p className={styles.formSubtitle}>Ingresa con tu usuario y contraseña</p>
     </div>
 
-    <div className={styles.inputContainer}>
-      <svg  xmlns="http://www.w3.org/2000/svg" 
-      className={styles.icon} 
-      width="24"  
-      height="24" 
-      viewBox="0 0 24 24"  
-      fill="none"  
-      stroke="currentColor"  
-      strokeWidth="2"  
-      strokeLinecap="round"  
-      strokeLinejoin="round"  
-      class="icon icon-tabler icons-tabler-outline icon-tabler-lock-password">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" />
-        <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
-        <path d="M15 16h.01" />
-        <path d="M12.01 16h.01" />
-        <path d="M9.02 16h.01" />
-    </svg>
-    <input
-      type="password"
-      name="contrasena"
-      placeholder="Contraseña"
-     // value={formData.contrasena}
-      //onChange={handleChange}
-      required
-      className={styles.input}
-    />
+    <div className={styles.inputGroup}>
+      <div className={styles.inputIcon} aria-hidden>
+        {/* user icon */}
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zM4 20c0-4 4-6 8-6s8 2 8 6v1H4v-1z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </div>
+      <div className={styles.inputWrap}>
+        <input
+          type="text"
+          name="correo"
+          placeholder="Correo electrónico"
+          required
+          className={styles.input}
+          aria-label="correo electronico"
+        />
+      </div>
     </div>
 
-    <button className={styles.button}>Iniciar sesión</button>
-      <div className={styles.linksContainer}>
+    <div className={styles.inputGroup}>
+      <div className={styles.inputIcon} aria-hidden>
+        {/* lock icon */}
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M7 11V8a5 5 0 0110 0v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </div>
+      <div className={styles.inputWrap}>
+        <input
+          type={showPassword ? 'text' : 'password'}
+          name="contrasena"
+          placeholder="Contraseña"
+          required
+          className={styles.input}
+          aria-label="contraseña"
+        />
+        <button type="button" className={styles.eyeButton} onClick={()=>setShowPassword(s=>!s)} aria-label={showPassword? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+          {showPassword ? (
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M10.58 10.59A3 3 0 0113.41 13.41" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          )}
+        </button>
+      </div>
+    </div>
+
+    <div className={styles.actions}>
+      <button type="submit" className={styles.button}>INICIAR SESIÓN</button>
+    </div>
+    <div className={styles.linksContainer}>
     <a href="/recuperar1" className={styles.link}>¿Olvidaste tu contraseña?</a>
-    <a href="/registro" className={styles.link}>¿Crear  cuenta?</a>
-    <a href="/recuperar3" className={styles.link}>¿Olvidaste tu correo electrónico de Agencia Virtual?</a>
+    <a href="/registro" className={styles.link}>¿No tienes una cuenta? Regístrate</a>
+    <a href="/recuperar3" className={styles.link}>¿Olvidaste tu correo electrónico?</a>
   </div>
   </form>
 </div>
 
 );
 }
+
+
+
+  

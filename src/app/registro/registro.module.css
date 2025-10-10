@@ -67,5 +67,6 @@
 .error{ color:#b91c1c; padding:.5rem .5rem; background: #fff3f2; border-radius:6px; }
 .actions{ display:flex; justify-content:center; margin-top:0.25rem; }
 .button{ background:#0e2433; color:#fff; padding:.95rem 1.2rem; border-radius:36px; border:none; cursor:pointer; font-weight:700; }
+.backButton{ background:transparent; color:#0f1724; padding:.85rem 1rem; border-radius:36px; border:1px solid rgba(15,23,38,0.08); cursor:pointer; margin-right:0.75rem; font-weight:700; }
 
 @media (max-width:700px){ .row{ flex-direction:column; } }

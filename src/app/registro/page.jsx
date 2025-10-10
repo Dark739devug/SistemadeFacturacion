@@ -81,11 +81,17 @@ export default function CrearAgencia() {
           {error && <div className={styles.error}>{error}</div>}
 
           <div className={styles.actions}>
-            <button type="submit" className={styles.button}>
-              Siguiente
-              <span style={{display:'inline-block', marginLeft:8, verticalAlign:'middle'}} aria-hidden>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 5l7 7-7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <button type="button" className={styles.backButton} onClick={() => router.push('/login')}>
+              <span style={{display:'inline-block', marginRight:8, verticalAlign:'middle'}} aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="#0f1724" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </span>
+              Regresar
+            </button>
+            <button type="submit" className={styles.button}>
+              <span style={{display:'inline-block', marginRight:8, verticalAlign:'middle'}} aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="7" r="4" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </span>
+              Crear Usuario
             </button>
           </div>
         </form>
