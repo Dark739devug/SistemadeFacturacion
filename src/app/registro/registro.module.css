@@ -8,7 +8,7 @@
 }
 .card{
   width:100%;
-  max-width:650px;
+  max-width:750px;
   background:#fff;
   border-radius:18px;
   padding:2.5rem;
@@ -43,6 +43,36 @@
   border-color: rgba(3,102,214,0.12);
 }
 .row{ display:flex; gap:1rem; }
+.col{ flex:1; }
+
+/* invalid field state */
+.invalid{
+  border-color: #ef4444 !important;
+  box-shadow: 0 6px 18px rgba(239,68,68,0.08), 0 0 0 6px rgba(239,68,68,0.06) !important;
+}
+
+/* success overlay */
+.successOverlay{
+  position:fixed;
+  left:0; right:0; top:0; bottom:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,0.12);
+  z-index:9999;
+}
+.successBox{
+  background: #fff;
+  border-radius:12px;
+  padding:1.2rem 1.6rem;
+  display:flex;
+  gap:1rem;
+  align-items:center;
+  box-shadow: 0 12px 40px rgba(2,6,23,0.12);
+  min-width:360px;
+}
+.successIcon{ width:72px; height:72px; display:flex; align-items:center; justify-content:center; }
+.successText{ color:#064e3b; }
 .input{
   padding:.9rem 1rem;
   border:1.8px solid rgba(15,23,38,0.12);
@@ -53,6 +83,13 @@
   transition: border-color .16s ease, box-shadow .16s ease, transform .12s ease, border-left-color .16s ease;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 6px 18px rgba(12,20,40,0.03);
 }
+.fieldWithIcon{ position:relative; }
+.fieldIcon{ position:absolute; left:14px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--muted); }
+.withLeftIcon{ padding-left:40px; }
+.passwordFieldWrap{ position:relative; }
+.passwordInput{ padding-right:48px; }
+.eyeButton{ position:absolute; right:8px; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; background:transparent; border:none; cursor:pointer; color:var(--muted); }
+.eyeButton svg{ width:18px; height:18px; }
 .input:hover{
   box-shadow: inset 0 1px 0 rgba(15, 14, 14, 0.6), 0 12px 28px rgba(12,20,40,0.05);
 	border-color: rgba(15,23,38,0.18);
