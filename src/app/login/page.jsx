@@ -2,15 +2,62 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
-//import {toast} from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
+
 
 export default function Login() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    correo: '',
-    contraseña: ''
-  });
   const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    correoElectronico: '',
+    contrasena: ''
+
+  
+  });
+const handleChange = (e) => {
+  setFormData({
+      ...formData,
+    [e.target.name]: e.target.value,
+  });
+};
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+try {
+   const response = await fetch('http://localhost:9090/api/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+  const dataText= await response.text();
+
+   if (response.ok && dataText.trim() !== '') {
+        
+     localStorage.setItem('accessToken', dataText);
+    localStorage.setItem('nombre', formData.correoElectronico || '');
+
+       toast.success(`Bienvenido ${formData.correoElectronico}`, {
+        position: 'top-center',
+      });
+       router.push('/dashboard');
+      } else {
+        toast.error(
+           'Credenciales incorrectas', {
+          position: 'top-center',
+        });
+
+  }
+
+}
+catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      toast.error(' Ocurrió un error. Intenta nuevamente.', { position: 'top-center' });
+    }
+
+};
+
+
 
 return (
 <div className={styles.loginContainer}>
@@ -18,67 +65,102 @@ return (
     <img src="/factura.png" alt="Logo" className={styles.logo} />
   </div>
 
-  <form  className={styles.formContainer}>
-    <div className={styles.formHeader}>
-      <h2 className={styles.formTitle}>Accede a tu FacturaGuate</h2>
-      <p className={styles.formSubtitle}>Ingresa con tu usuario y contraseña</p>
+  <form  onSubmit={handleSubmit} className={styles.formContainer}>
+    <h2 className={styles.title}>Iniciar Sesión</h2>
+    <div className={styles.inputContainer}> 
+    
+      <svg  xmlns="http://www.w3.org/2000/svg" 
+       width="24"  
+       height="24"  
+       viewBox="0 0 24 24" 
+       fill="currentColor" 
+      >
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M12 2a5 5 0 1 1 -5 5l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+        <path d="M14 14a5 5 0 0 1 5 5v1a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-1a5 5 0 0 1 5 -5h4z" />
+        </svg>
+         
+    <input
+      type="email"
+      name="correoElectronico"
+      placeholder="Correo Electrónico"
+      value={formData.correoElectronico}
+      onChange={handleChange}
+      required
+      className={styles.input}
+    />
     </div>
 
-    <div className={styles.inputGroup}>
-      <div className={styles.inputIcon} aria-hidden>
-        {/* user icon */}
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zM4 20c0-4 4-6 8-6s8 2 8 6v1H4v-1z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-      </div>
-      <div className={styles.inputWrap}>
-        <input
-          type="text"
-          name="correo"
-          placeholder="Correo electrónico"
-          required
-          className={styles.input}
-          aria-label="correo electronico"
-        />
-      </div>
+    <div className={styles.inputContainer}>
+        <svg  xmlns="http://www.w3.org/2000/svg"  
+        width="24"  
+        height="24"  
+        viewBox="0 0 24 24"  
+        fill="currentColor"  
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M12 2a5 5 0 0 1 5 5v3a3 3 0 0 1 3 3v6a3 3 0 0 1 -3 3h-10a3 3 0 0 1 -3 -3v-6a3 3 0 0 1 3 -3v-3a5 5 0 0 1 5 -5m0 12a2 2 0 0 0 -1.995 1.85l-.005 .15a2 2 0 1 0 2 -2m0 -10a3 3 0 0 0 -3 3v3h6v-3a3 3 0 0 0 -3 -3" /></svg>
+        
+            <input
+            type={showPassword ? 'text' : 'password'}
+            name="contrasena"
+            placeholder="Contraseña"
+            value={formData.contrasena}
+            onChange={handleChange}
+            required
+            className={styles.input}
+      />
+        <button
+        type="button"
+        className={styles.eyeButton}
+        onClick={() => setShowPassword(!showPassword)}
+        aria-pressed={showPassword}
+        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+      >
+        {showPassword ? (
+          
+          <svg  xmlns="http://www.w3.org/2000/svg"  
+          width="28"  
+          height="28"  
+          viewBox="0 0 24 24"  
+          fill="currentColor"  
+      >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 4c4.29 0 7.863 2.429 10.665 7.154l.22 .379l.045 .1l.03 .083l.014 .055l.014 .082l.011 .1v.11l-.014 .111a.992 .992 0 0 1 -.026 .11l-.039 .108l-.036 .075l-.016 .03c-2.764 4.836 -6.3 7.38 -10.555 7.499l-.313 .004c-4.396 0 -8.037 -2.549 -10.868 -7.504a1 1 0 0 1 0 -.992c2.831 -4.955 6.472 -7.504 10.868 -7.504zm0 5a3 3 0 1 0 0 6a3 3 0 0 0 0 -6z" /></svg>
+        ) : (
+          
+          <svg  xmlns="http://www.w3.org/2000/svg" 
+           width="28"  
+           height="28"
+           viewBox="0 0 24 24"  
+           fill="none"  
+           stroke="currentColor"  
+           strokeWidth="2"  
+           strokeLinecap="round"  
+           strokeLinejoin="round"  
+           >
+            <path stroke="none" 
+            d="M0 0h24v24H0z" 
+            fill="none"/>
+            <path d="M21 9c-2.4 2.667 -5.4 4 -9 4c-3.6 0 -6.6 -1.333 -9 -4" />
+            <path d="M3 15l2.5 -3.8" />
+            <path d="M21 14.976l-2.492 -3.776" />
+            <path d="M9 17l.5 -4" />
+            <path d="M15 17l-.5 -4" />
+            </svg>
+        )}
+      </button>
     </div>
+     
 
-    <div className={styles.inputGroup}>
-      <div className={styles.inputIcon} aria-hidden>
-        {/* lock icon */}
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M7 11V8a5 5 0 0110 0v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-      </div>
-      <div className={styles.inputWrap}>
-        <input
-          type={showPassword ? 'text' : 'password'}
-          name="contrasena"
-          placeholder="Contraseña"
-          required
-          className={styles.input}
-          aria-label="contraseña"
-        />
-        <button type="button" className={styles.eyeButton} onClick={()=>setShowPassword(s=>!s)} aria-label={showPassword? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-          {showPassword ? (
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M10.58 10.59A3 3 0 0113.41 13.41" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          )}
-        </button>
-      </div>
-    </div>
-
-    <div className={styles.actions}>
-      <button type="submit" className={styles.button}>INICIAR SESIÓN</button>
-    </div>
-    <div className={styles.linksContainer}>
+    <button type="submit"className={styles.button}>Iniciar sesión</button>
+      <div className={styles.linksContainer}>
     <a href="/recuperar1" className={styles.link}>¿Olvidaste tu contraseña?</a>
-    <a href="/registro" className={styles.link}>¿No tienes una cuenta? Regístrate</a>
-    <a href="/recuperar3" className={styles.link}>¿Olvidaste tu correo electrónico?</a>
+    <a href="/registro" className={styles.link}>¿Crear  cuenta?</a>
+    <a href="/recuperar3" className={styles.link}>¿Olvidaste tu correo electrónico de Agencia Virtual?</a>
   </div>
   </form>
+   <ToastContainer position="top-center" />
 </div>
 
-);
-}
-
-
-
-  
+);}
