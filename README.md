@@ -1,10 +1,5 @@
 # 📊 API Certificador de Facturación Electrónica
 
-![GitHub repo size](https://img.shields.io/github/repo-size/Dark739devug/SistemadeFacturacion)
-![GitHub last commit](https://img.shields.io/github/last-commit/Dark739devug/SistemadeFacturacion)
-![GitHub language count](https://img.shields.io/github/languages/count/Dark739devug/SistemadeFacturacion)
-![License](https://img.shields.io/github/license/Dark739devug/SistemadeFacturacion)
-
 ---
 
 ## ✨ Descripción
