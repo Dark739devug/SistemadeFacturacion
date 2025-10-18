@@ -19,10 +19,12 @@
 .navItem .icon{ width:18px; height:18px; opacity:.95; display:inline-flex; align-items:center; justify-content:center; }
 .navItem svg{ display:block; width:18px; height:18px; color:inherit; stroke:currentColor; }
 .content{ flex:1; padding:2rem; background:linear-gradient(180deg,#f8fafc 0%, #eef2ff 100%); }
-.footerSidebar{ margin-top:auto; padding-top:1rem; font-size:.9rem; color:var(--muted); }
-.footerItem{ display:flex; gap:.6rem; align-items:center; padding:.35rem .2rem; border-radius:6px; cursor:pointer; }
-.footerItem:hover{ color:var(--accent); background:rgba(11,96,214,0.04); }
-.footerItem svg{ width:16px; height:16px; color:inherit; stroke:currentColor; }
+.footerSidebar{  margin-top: 5rem; border-top:#000000; padding-top: 1rem; font-size: .9rem; color: var(--muted);  display: flex; flex-direction: column; gap: 0.25rem;}
+.footerItem{ display:flex; gap:.75rem; align-items:center; padding:.6rem; border-radius:8px; cursor:pointer; background:transparent; border:none; width:100%; text-align:left; }
+.footerItem:hover{ color:var(--accent); background:rgba(11,96,214,0.06);}
+.footerItem svg{  width:18px; height:18px; color:inherit; stroke:currentColor; display:block; }
+.footerContainer{ display:flex; align-items:center; gap:.5rem; }
+.footerItem .icon {width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; opacity:.95; }
 
 /* Ajustes para pantallas pequeñas */
 @media (max-width: 720px){

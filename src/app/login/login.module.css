@@ -143,7 +143,7 @@
   height: 36px;
   background: transparent;
   border: none;
-  color: var(--accent-600);
+  color:#2C2A27;
   cursor: pointer;
   padding: 0;
   transition: color 0.2s ease;
