@@ -1,3 +1,4 @@
+-- TABLAS PRINCIPALES SAT (sin cambios)
 CREATE TABLE establecimientos_certificados (
     id_establecimiento_cert SERIAL PRIMARY KEY,
     nit VARCHAR(20) NOT NULL UNIQUE,
@@ -174,55 +175,43 @@ CREATE TABLE estadisticas_diarias (
     CONSTRAINT unique_fecha_establecimiento UNIQUE (fecha_estadistica, id_establecimiento_cert)
 );
 
-CREATE INDEX idx_establecimientos_cert_nit ON establecimientos_certificados(nit);
-CREATE INDEX idx_establecimientos_cert_codigo ON establecimientos_certificados(codigo_establecimiento);
-CREATE INDEX idx_establecimientos_cert_estado ON establecimientos_certificados(estado_certificador);
+-- TABLA DE USUARIOS (mejorada)
+CREATE TABLE usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    rol VARCHAR(50) NOT NULL DEFAULT 'OPERADOR',
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ultimo_login TIMESTAMP,
+    id_establecimiento_cert INTEGER,
+    token_version INTEGER DEFAULT 1,
+    CONSTRAINT chk_rol CHECK (rol IN ('ADMIN', 'SUPERVISOR', 'OPERADOR', 'VISOR')),
+    FOREIGN KEY (id_establecimiento_cert) REFERENCES establecimientos_certificados(id_establecimiento_cert)
+);
 
-CREATE INDEX idx_series_establecimiento ON series_autorizadas(id_establecimiento_cert);
-CREATE INDEX idx_series_activas ON series_autorizadas(activa);
+-- TABLA DE LOGIN / SESIONES
+CREATE TABLE login_sesiones (
+    id_login SERIAL PRIMARY KEY,
+    id_usuario INTEGER NOT NULL,
+    token VARCHAR(500) NOT NULL,
+    fecha_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_logout TIMESTAMP,
+    ip_origen VARCHAR(50),
+    dispositivo VARCHAR(100),
+    activo BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+);
 
-CREATE INDEX idx_transacciones_uuid ON transacciones_certificacion(uuid_transaccion);
-CREATE INDEX idx_transacciones_establecimiento ON transacciones_certificacion(id_establecimiento_cert);
-CREATE INDEX idx_transacciones_fecha ON transacciones_certificacion(fecha_solicitud);
-CREATE INDEX idx_transacciones_autorizacion ON transacciones_certificacion(numero_autorizacion);
-CREATE INDEX idx_transacciones_exitosa ON transacciones_certificacion(exitosa);
+CREATE INDEX idx_usuarios_username ON usuarios(username);
+CREATE INDEX idx_usuarios_email ON usuarios(email);
+CREATE INDEX idx_login_usuario ON login_sesiones(id_usuario);
+CREATE INDEX idx_login_token ON login_sesiones(token);
+CREATE INDEX idx_login_fecha ON login_sesiones(fecha_login);
 
-CREATE INDEX idx_facturas_cert_autorizacion ON facturas_certificadas(numero_autorizacion);
-CREATE INDEX idx_facturas_cert_uuid ON facturas_certificadas(uuid_certificacion);
-CREATE INDEX idx_facturas_cert_establecimiento ON facturas_certificadas(id_establecimiento_cert);
-CREATE INDEX idx_facturas_cert_nit_emisor ON facturas_certificadas(nit_emisor);
-CREATE INDEX idx_facturas_cert_nit_receptor ON facturas_certificadas(nit_receptor);
-CREATE INDEX idx_facturas_cert_fecha_emision ON facturas_certificadas(fecha_emision);
-CREATE INDEX idx_facturas_cert_fecha_certificacion ON facturas_certificadas(fecha_certificacion);
-CREATE INDEX idx_facturas_cert_estado ON facturas_certificadas(estado_certificacion);
-CREATE INDEX idx_facturas_cert_serie_correlativo ON facturas_certificadas(serie, correlativo);
-
-CREATE INDEX idx_detalle_cert_factura ON detalle_facturas_certificadas(id_factura_cert);
-
-CREATE INDEX idx_anulaciones_factura ON anulaciones(id_factura_cert);
-CREATE INDEX idx_anulaciones_autorizacion ON anulaciones(numero_autorizacion);
-CREATE INDEX idx_anulaciones_fecha ON anulaciones(fecha_solicitud_anulacion);
-CREATE INDEX idx_anulaciones_estado ON anulaciones(estado_anulacion);
-
-CREATE INDEX idx_numeros_autorizacion_utilizado ON numeros_autorizacion(utilizado);
-CREATE INDEX idx_numeros_autorizacion_numero ON numeros_autorizacion(numero_autorizacion);
-
-CREATE INDEX idx_logs_fecha ON logs_sistema(fecha_log);
-CREATE INDEX idx_logs_nivel ON logs_sistema(nivel_log);
-CREATE INDEX idx_logs_modulo ON logs_sistema(modulo);
-
-CREATE INDEX idx_estadisticas_fecha ON estadisticas_diarias(fecha_estadistica);
-CREATE INDEX idx_estadisticas_establecimiento ON estadisticas_diarias(id_establecimiento_cert);
-
-INSERT INTO configuracion_certificador (clave, valor, descripcion, tipo_dato) VALUES
-('TASA_IVA', '0.12', 'Tasa de IVA en Guatemala (12%)', 'DECIMAL'),
-('LONGITUD_AUTORIZACION', '37', 'Longitud del número de autorización', 'INTEGER'),
-('TIMEOUT_CERTIFICACION', '30', 'Timeout en segundos para certificación', 'INTEGER'),
-('ALGORITMO_FIRMA', 'SHA256withRSA', 'Algoritmo de firma digital', 'STRING'),
-('FORMATO_FECHA', 'YYYY-MM-DD HH24:MI:SS', 'Formato de fecha para certificación', 'STRING'),
-('LIMITE_FACTURAS_DIARIAS_DEFAULT', '1000', 'Límite de facturas diarias por defecto', 'INTEGER'),
-('DIAS_VALIDEZ_CERTIFICACION', '365', 'Días de validez de una certificación', 'INTEGER');
-
+-- FUNCIONES SAT (sin cambios)
 CREATE OR REPLACE FUNCTION generar_numero_autorizacion()
 RETURNS VARCHAR AS $$
 DECLARE
@@ -398,6 +387,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- VIEWS (sin cambios)
 CREATE OR REPLACE VIEW vista_facturas_certificadas_completas AS
 SELECT
     fc.id_factura_cert,
@@ -452,37 +442,10 @@ SELECT
     t.fecha_respuesta,
     ec.nit AS establecimiento_nit,
     ec.nombre_comercial AS establecimiento_nombre,
-    t.exitosa,
     t.codigo_respuesta,
     t.mensaje_respuesta,
-    t.numero_autorizacion,
-    t.tiempo_procesamiento_ms,
-    t.total_factura
+    t.exitosa,
+    t.tiempo_procesamiento_ms
 FROM transacciones_certificacion t
 INNER JOIN establecimientos_certificados ec ON t.id_establecimiento_cert = ec.id_establecimiento_cert
-ORDER BY t.fecha_solicitud DESC
-LIMIT 100;
-
-
--- TABLA DE USUARIOS PARA ACCESO AL SISTEMA ADMINISTRATIVO
-CREATE TABLE usuarios (
-    id_usuario SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE, -- Nombre de usuario para el login
-    password_hash TEXT NOT NULL,          -- Contraseña en formato hash (nunca texto plano)
-    email VARCHAR(150) UNIQUE NOT NULL,
-    nombre_completo VARCHAR(200) NOT NULL,
-    rol VARCHAR(50) NOT NULL DEFAULT 'OPERADOR', -- Ej: ADMIN, SUPERVISOR, OPERADOR, etc.
-    activo BOOLEAN DEFAULT TRUE,
-    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ultimo_login TIMESTAMP,
-    -- Podrías relacionar al usuario con un establecimiento si fuera necesario, pero por ahora lo dejamos independiente
-    -- id_establecimiento_cert INTEGER,
-    -- FOREIGN KEY (id_establecimiento_cert) REFERENCES establecimientos_certificados(id_establecimiento_cert),
-    CONSTRAINT chk_rol CHECK (rol IN ('ADMIN', 'SUPERVISOR', 'OPERADOR', 'VISOR'))
-);
-
--- Índice para búsquedas rápidas por nombre de usuario y email
-CREATE INDEX idx_usuarios_username ON usuarios(username);
-CREATE INDEX idx_usuarios_email ON usuarios(email);
-
-
+ORDER BY t.fecha_solicitud DESC;
