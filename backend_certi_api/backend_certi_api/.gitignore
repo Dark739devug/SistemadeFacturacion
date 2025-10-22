@@ -1,10 +1,8 @@
-HELP.md
+# Maven
 target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+!.mvn/wrapper/maven-wrapper.jar
 
-### STS ###
+# Eclipse / STS
 .apt_generated
 .classpath
 .factorypath
@@ -13,21 +11,35 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IntelliJ IDEA
+.idea/
 *.iml
+*.iws
 *.ipr
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# VS Code
 .vscode/
+
+# Archivos temporales o del sistema
+*.log
+*.tmp
+*.swp
+*.DS_Store
+
+# Node.js (si tienes frontend en React u otro JS)
+node_modules/
+dist/
+build/
+
+# Permitir subir carpetas importantes de código
+!src/
+!**/src/main/**
+!**/src/test/**
