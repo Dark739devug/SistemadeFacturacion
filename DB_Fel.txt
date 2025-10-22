@@ -1,0 +1,488 @@
+CREATE TABLE establecimientos_certificados (
+    id_establecimiento_cert SERIAL PRIMARY KEY,
+    nit VARCHAR(20) NOT NULL UNIQUE,
+    razon_social VARCHAR(200) NOT NULL,
+    nombre_comercial VARCHAR(200) NOT NULL,
+    direccion TEXT NOT NULL,
+    codigo_establecimiento VARCHAR(10) UNIQUE NOT NULL,
+    email_contacto VARCHAR(150),
+    telefono VARCHAR(20),
+    estado_certificador VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_activacion TIMESTAMP,
+    fecha_suspension TIMESTAMP,
+    motivo_suspension TEXT,
+    limite_facturas_diarias INTEGER DEFAULT 1000,
+    facturas_emitidas_hoy INTEGER DEFAULT 0,
+    ultima_factura_fecha DATE,
+    activo BOOLEAN DEFAULT TRUE,
+    CONSTRAINT chk_estado_certificador CHECK (estado_certificador IN ('ACTIVO', 'SUSPENDIDO', 'INACTIVO'))
+);
+
+CREATE TABLE series_autorizadas (
+    id_serie SERIAL PRIMARY KEY,
+    id_establecimiento_cert INTEGER NOT NULL,
+    serie VARCHAR(20) NOT NULL,
+    tipo_documento VARCHAR(10) NOT NULL,
+    correlativo_inicial INTEGER NOT NULL DEFAULT 1,
+    correlativo_actual INTEGER NOT NULL DEFAULT 0,
+    correlativo_final INTEGER,
+    fecha_autorizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_vencimiento TIMESTAMP,
+    activa BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (id_establecimiento_cert) REFERENCES establecimientos_certificados(id_establecimiento_cert),
+    CONSTRAINT unique_serie_establecimiento UNIQUE (id_establecimiento_cert, serie, tipo_documento)
+);
+
+CREATE TABLE transacciones_certificacion (
+    id_transaccion SERIAL PRIMARY KEY,
+    uuid_transaccion UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    id_establecimiento_cert INTEGER NOT NULL,
+    fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_origen VARCHAR(50),
+    datos_solicitud JSONB NOT NULL,
+    fecha_respuesta TIMESTAMP,
+    codigo_respuesta VARCHAR(20) NOT NULL,
+    mensaje_respuesta TEXT,
+    exitosa BOOLEAN NOT NULL DEFAULT FALSE,
+    numero_autorizacion VARCHAR(100) UNIQUE,
+    serie_asignada VARCHAR(20),
+    correlativo_asignado INTEGER,
+    nit_emisor VARCHAR(20),
+    nit_receptor VARCHAR(20),
+    total_factura NUMERIC(12, 2),
+    tiempo_procesamiento_ms INTEGER,
+    FOREIGN KEY (id_establecimiento_cert) REFERENCES establecimientos_certificados(id_establecimiento_cert)
+);
+
+CREATE TABLE facturas_certificadas (
+    id_factura_cert SERIAL PRIMARY KEY,
+    id_transaccion INTEGER NOT NULL UNIQUE,
+    numero_autorizacion VARCHAR(100) NOT NULL UNIQUE,
+    uuid_certificacion UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    id_establecimiento_cert INTEGER NOT NULL,
+    nit_emisor VARCHAR(20) NOT NULL,
+    nombre_emisor VARCHAR(200) NOT NULL,
+    direccion_emisor TEXT,
+    nit_receptor VARCHAR(20) NOT NULL,
+    razon_social_receptor VARCHAR(200) NOT NULL,
+    direccion_receptor TEXT,
+    tipo_documento VARCHAR(10) NOT NULL,
+    serie VARCHAR(20) NOT NULL,
+    correlativo INTEGER NOT NULL,
+    numero_documento VARCHAR(50) NOT NULL,
+    fecha_emision TIMESTAMP NOT NULL,
+    fecha_certificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    subtotal NUMERIC(12, 2) NOT NULL CHECK (subtotal >= 0),
+    total_descuentos NUMERIC(12, 2) DEFAULT 0 CHECK (total_descuentos >= 0),
+    total_iva NUMERIC(12, 2) NOT NULL CHECK (total_iva >= 0),
+    total_factura NUMERIC(12, 2) NOT NULL CHECK (total_factura >= 0),
+    cantidad_items INTEGER NOT NULL CHECK (cantidad_items > 0),
+    observaciones TEXT,
+    xml_original TEXT NOT NULL,
+    xml_firmado TEXT NOT NULL,
+    firma_digital TEXT NOT NULL,
+    estado_certificacion VARCHAR(20) NOT NULL DEFAULT 'VIGENTE',
+    fecha_anulacion TIMESTAMP,
+    motivo_anulacion TEXT,
+    id_usuario_anulacion VARCHAR(100),
+    FOREIGN KEY (id_transaccion) REFERENCES transacciones_certificacion(id_transaccion),
+    FOREIGN KEY (id_establecimiento_cert) REFERENCES establecimientos_certificados(id_establecimiento_cert),
+    CONSTRAINT chk_estado_certificacion CHECK (estado_certificacion IN ('VIGENTE', 'ANULADA')),
+    CONSTRAINT unique_serie_correlativo UNIQUE (id_establecimiento_cert, serie, correlativo)
+);
+
+CREATE TABLE detalle_facturas_certificadas (
+    id_detalle_cert SERIAL PRIMARY KEY,
+    id_factura_cert INTEGER NOT NULL,
+    numero_linea INTEGER NOT NULL,
+    codigo_producto VARCHAR(50),
+    descripcion VARCHAR(500) NOT NULL,
+    cantidad NUMERIC(10, 2) NOT NULL CHECK (cantidad > 0),
+    unidad_medida VARCHAR(20) NOT NULL,
+    precio_unitario NUMERIC(12, 2) NOT NULL CHECK (precio_unitario >= 0),
+    descuento NUMERIC(12, 2) DEFAULT 0 CHECK (descuento >= 0),
+    subtotal_linea NUMERIC(12, 2) NOT NULL CHECK (subtotal_linea >= 0),
+    monto_iva NUMERIC(12, 2) DEFAULT 0 CHECK (monto_iva >= 0),
+    total_linea NUMERIC(12, 2) NOT NULL CHECK (total_linea >= 0),
+    FOREIGN KEY (id_factura_cert) REFERENCES facturas_certificadas(id_factura_cert) ON DELETE CASCADE,
+    CONSTRAINT unique_linea_factura_cert UNIQUE (id_factura_cert, numero_linea)
+);
+
+CREATE TABLE anulaciones (
+    id_anulacion SERIAL PRIMARY KEY,
+    id_factura_cert INTEGER NOT NULL,
+    numero_autorizacion VARCHAR(100) NOT NULL,
+    fecha_solicitud_anulacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_anulacion TIMESTAMP,
+    motivo_anulacion TEXT NOT NULL,
+    usuario_anulacion VARCHAR(100),
+    ip_origen VARCHAR(50),
+    estado_anulacion VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    codigo_respuesta VARCHAR(20),
+    mensaje_respuesta TEXT,
+    datos_factura_original JSONB,
+    FOREIGN KEY (id_factura_cert) REFERENCES facturas_certificadas(id_factura_cert),
+    CONSTRAINT chk_estado_anulacion CHECK (estado_anulacion IN ('PENDIENTE', 'APROBADA', 'RECHAZADA'))
+);
+
+CREATE TABLE numeros_autorizacion (
+    id_numero_autorizacion SERIAL PRIMARY KEY,
+    numero_autorizacion VARCHAR(100) NOT NULL UNIQUE,
+    fecha_generacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    utilizado BOOLEAN DEFAULT FALSE,
+    fecha_utilizacion TIMESTAMP,
+    id_factura_cert INTEGER,
+    FOREIGN KEY (id_factura_cert) REFERENCES facturas_certificadas(id_factura_cert)
+);
+
+CREATE TABLE configuracion_certificador (
+    id_config SERIAL PRIMARY KEY,
+    clave VARCHAR(100) NOT NULL UNIQUE,
+    valor TEXT NOT NULL,
+    descripcion TEXT,
+    tipo_dato VARCHAR(20) DEFAULT 'STRING',
+    fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE logs_sistema (
+    id_log SERIAL PRIMARY KEY,
+    nivel_log VARCHAR(20) NOT NULL,
+    modulo VARCHAR(100),
+    mensaje TEXT NOT NULL,
+    datos_adicionales JSONB,
+    ip_origen VARCHAR(50),
+    fecha_log TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_nivel_log CHECK (nivel_log IN ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'))
+);
+
+CREATE TABLE estadisticas_diarias (
+    id_estadistica SERIAL PRIMARY KEY,
+    fecha_estadistica DATE NOT NULL,
+    id_establecimiento_cert INTEGER,
+    total_solicitudes INTEGER DEFAULT 0,
+    total_certificadas INTEGER DEFAULT 0,
+    total_rechazadas INTEGER DEFAULT 0,
+    total_anuladas INTEGER DEFAULT 0,
+    monto_total_certificado NUMERIC(15, 2) DEFAULT 0,
+    monto_total_iva NUMERIC(15, 2) DEFAULT 0,
+    tiempo_promedio_certificacion_ms INTEGER,
+    tiempo_minimo_certificacion_ms INTEGER,
+    tiempo_maximo_certificacion_ms INTEGER,
+    fecha_calculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_establecimiento_cert) REFERENCES establecimientos_certificados(id_establecimiento_cert),
+    CONSTRAINT unique_fecha_establecimiento UNIQUE (fecha_estadistica, id_establecimiento_cert)
+);
+
+CREATE INDEX idx_establecimientos_cert_nit ON establecimientos_certificados(nit);
+CREATE INDEX idx_establecimientos_cert_codigo ON establecimientos_certificados(codigo_establecimiento);
+CREATE INDEX idx_establecimientos_cert_estado ON establecimientos_certificados(estado_certificador);
+
+CREATE INDEX idx_series_establecimiento ON series_autorizadas(id_establecimiento_cert);
+CREATE INDEX idx_series_activas ON series_autorizadas(activa);
+
+CREATE INDEX idx_transacciones_uuid ON transacciones_certificacion(uuid_transaccion);
+CREATE INDEX idx_transacciones_establecimiento ON transacciones_certificacion(id_establecimiento_cert);
+CREATE INDEX idx_transacciones_fecha ON transacciones_certificacion(fecha_solicitud);
+CREATE INDEX idx_transacciones_autorizacion ON transacciones_certificacion(numero_autorizacion);
+CREATE INDEX idx_transacciones_exitosa ON transacciones_certificacion(exitosa);
+
+CREATE INDEX idx_facturas_cert_autorizacion ON facturas_certificadas(numero_autorizacion);
+CREATE INDEX idx_facturas_cert_uuid ON facturas_certificadas(uuid_certificacion);
+CREATE INDEX idx_facturas_cert_establecimiento ON facturas_certificadas(id_establecimiento_cert);
+CREATE INDEX idx_facturas_cert_nit_emisor ON facturas_certificadas(nit_emisor);
+CREATE INDEX idx_facturas_cert_nit_receptor ON facturas_certificadas(nit_receptor);
+CREATE INDEX idx_facturas_cert_fecha_emision ON facturas_certificadas(fecha_emision);
+CREATE INDEX idx_facturas_cert_fecha_certificacion ON facturas_certificadas(fecha_certificacion);
+CREATE INDEX idx_facturas_cert_estado ON facturas_certificadas(estado_certificacion);
+CREATE INDEX idx_facturas_cert_serie_correlativo ON facturas_certificadas(serie, correlativo);
+
+CREATE INDEX idx_detalle_cert_factura ON detalle_facturas_certificadas(id_factura_cert);
+
+CREATE INDEX idx_anulaciones_factura ON anulaciones(id_factura_cert);
+CREATE INDEX idx_anulaciones_autorizacion ON anulaciones(numero_autorizacion);
+CREATE INDEX idx_anulaciones_fecha ON anulaciones(fecha_solicitud_anulacion);
+CREATE INDEX idx_anulaciones_estado ON anulaciones(estado_anulacion);
+
+CREATE INDEX idx_numeros_autorizacion_utilizado ON numeros_autorizacion(utilizado);
+CREATE INDEX idx_numeros_autorizacion_numero ON numeros_autorizacion(numero_autorizacion);
+
+CREATE INDEX idx_logs_fecha ON logs_sistema(fecha_log);
+CREATE INDEX idx_logs_nivel ON logs_sistema(nivel_log);
+CREATE INDEX idx_logs_modulo ON logs_sistema(modulo);
+
+CREATE INDEX idx_estadisticas_fecha ON estadisticas_diarias(fecha_estadistica);
+CREATE INDEX idx_estadisticas_establecimiento ON estadisticas_diarias(id_establecimiento_cert);
+
+INSERT INTO configuracion_certificador (clave, valor, descripcion, tipo_dato) VALUES
+('TASA_IVA', '0.12', 'Tasa de IVA en Guatemala (12%)', 'DECIMAL'),
+('LONGITUD_AUTORIZACION', '37', 'Longitud del número de autorización', 'INTEGER'),
+('TIMEOUT_CERTIFICACION', '30', 'Timeout en segundos para certificación', 'INTEGER'),
+('ALGORITMO_FIRMA', 'SHA256withRSA', 'Algoritmo de firma digital', 'STRING'),
+('FORMATO_FECHA', 'YYYY-MM-DD HH24:MI:SS', 'Formato de fecha para certificación', 'STRING'),
+('LIMITE_FACTURAS_DIARIAS_DEFAULT', '1000', 'Límite de facturas diarias por defecto', 'INTEGER'),
+('DIAS_VALIDEZ_CERTIFICACION', '365', 'Días de validez de una certificación', 'INTEGER');
+
+CREATE OR REPLACE FUNCTION generar_numero_autorizacion()
+RETURNS VARCHAR AS $$
+DECLARE
+    nuevo_numero VARCHAR(100);
+    existe BOOLEAN;
+BEGIN
+    LOOP
+        nuevo_numero := TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDD-HH24MISS') || '-' ||
+                       LPAD(FLOOR(RANDOM() * 100000000)::TEXT, 8, '0');
+        SELECT EXISTS(
+            SELECT 1 FROM facturas_certificadas WHERE numero_autorizacion = nuevo_numero
+        ) INTO existe;
+        EXIT WHEN NOT existe;
+    END LOOP;
+    RETURN nuevo_numero;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION obtener_siguiente_correlativo(
+    p_id_establecimiento INTEGER,
+    p_serie VARCHAR,
+    p_tipo_documento VARCHAR
+)
+RETURNS INTEGER AS $$
+DECLARE
+    siguiente_correlativo INTEGER;
+BEGIN
+    UPDATE series_autorizadas
+    SET correlativo_actual = correlativo_actual + 1
+    WHERE id_establecimiento_cert = p_id_establecimiento
+      AND serie = p_serie
+      AND tipo_documento = p_tipo_documento
+      AND activa = TRUE
+    RETURNING correlativo_actual INTO siguiente_correlativo;
+    IF siguiente_correlativo IS NULL THEN
+        RAISE EXCEPTION 'No se encontró serie activa para el establecimiento';
+    END IF;
+    RETURN siguiente_correlativo;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validar_establecimiento_activo(p_nit VARCHAR)
+RETURNS BOOLEAN AS $$
+DECLARE
+    esta_activo BOOLEAN;
+BEGIN
+    SELECT (estado_certificador = 'ACTIVO' AND activo = TRUE)
+      INTO esta_activo
+    FROM establecimientos_certificados
+    WHERE nit = p_nit;
+    RETURN COALESCE(esta_activo, FALSE);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION actualizar_contador_facturas()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE establecimientos_certificados
+    SET facturas_emitidas_hoy = CASE
+        WHEN ultima_factura_fecha = CURRENT_DATE THEN facturas_emitidas_hoy + 1
+        ELSE 1
+    END,
+    ultima_factura_fecha = CURRENT_DATE
+    WHERE id_establecimiento_cert = NEW.id_establecimiento_cert;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_actualizar_contador_facturas
+AFTER INSERT ON facturas_certificadas
+FOR EACH ROW
+EXECUTE FUNCTION actualizar_contador_facturas();
+
+CREATE OR REPLACE FUNCTION registrar_log(
+    p_nivel VARCHAR,
+    p_modulo VARCHAR,
+    p_mensaje TEXT,
+    p_datos JSONB DEFAULT NULL,
+    p_ip VARCHAR DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO logs_sistema (nivel_log, modulo, mensaje, datos_adicionales, ip_origen)
+    VALUES (p_nivel, p_modulo, p_mensaje, p_datos, p_ip);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION anular_factura_certificada(
+    p_numero_autorizacion VARCHAR,
+    p_motivo TEXT,
+    p_usuario VARCHAR
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    factura_id INTEGER;
+BEGIN
+    SELECT id_factura_cert INTO factura_id
+    FROM facturas_certificadas
+    WHERE numero_autorizacion = p_numero_autorizacion
+      AND estado_certificacion = 'VIGENTE';
+    IF factura_id IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    UPDATE facturas_certificadas
+    SET estado_certificacion = 'ANULADA',
+        fecha_anulacion = CURRENT_TIMESTAMP,
+        motivo_anulacion = p_motivo,
+        id_usuario_anulacion = p_usuario
+    WHERE id_factura_cert = factura_id;
+    INSERT INTO anulaciones (
+        id_factura_cert,
+        numero_autorizacion,
+        fecha_anulacion,
+        motivo_anulacion,
+        usuario_anulacion,
+        estado_anulacion
+    ) VALUES (
+        factura_id,
+        p_numero_autorizacion,
+        CURRENT_TIMESTAMP,
+        p_motivo,
+        p_usuario,
+        'APROBADA'
+    );
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION calcular_estadisticas_diarias(p_fecha DATE)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO estadisticas_diarias (
+        fecha_estadistica,
+        id_establecimiento_cert,
+        total_solicitudes,
+        total_certificadas,
+        total_rechazadas,
+        total_anuladas,
+        monto_total_certificado,
+        monto_total_iva,
+        tiempo_promedio_certificacion_ms,
+        tiempo_minimo_certificacion_ms,
+        tiempo_maximo_certificacion_ms
+    )
+    SELECT
+        p_fecha,
+        t.id_establecimiento_cert,
+        COUNT(*) as total_solicitudes,
+        COUNT(*) FILTER (WHERE t.exitosa = TRUE) as total_certificadas,
+        COUNT(*) FILTER (WHERE t.exitosa = FALSE) as total_rechazadas,
+        COUNT(*) FILTER (WHERE fc.estado_certificacion = 'ANULADA') as total_anuladas,
+        COALESCE(SUM(fc.total_factura), 0) as monto_total_certificado,
+        COALESCE(SUM(fc.total_iva), 0) as monto_total_iva,
+        AVG(t.tiempo_procesamiento_ms)::INTEGER as tiempo_promedio,
+        MIN(t.tiempo_procesamiento_ms) as tiempo_minimo,
+        MAX(t.tiempo_procesamiento_ms) as tiempo_maximo
+    FROM transacciones_certificacion t
+    LEFT JOIN facturas_certificadas fc ON t.id_transaccion = fc.id_transaccion
+    WHERE DATE(t.fecha_solicitud) = p_fecha
+    GROUP BY t.id_establecimiento_cert
+    ON CONFLICT (fecha_estadistica, id_establecimiento_cert)
+    DO UPDATE SET
+        total_solicitudes = EXCLUDED.total_solicitudes,
+        total_certificadas = EXCLUDED.total_certificadas,
+        total_rechazadas = EXCLUDED.total_rechazadas,
+        total_anuladas = EXCLUDED.total_anuladas,
+        monto_total_certificado = EXCLUDED.monto_total_certificado,
+        monto_total_iva = EXCLUDED.monto_total_iva,
+        tiempo_promedio_certificacion_ms = EXCLUDED.tiempo_promedio_certificacion_ms,
+        tiempo_minimo_certificacion_ms = EXCLUDED.tiempo_minimo_certificacion_ms,
+        tiempo_maximo_certificacion_ms = EXCLUDED.tiempo_maximo_certificacion_ms,
+        fecha_calculo = CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE VIEW vista_facturas_certificadas_completas AS
+SELECT
+    fc.id_factura_cert,
+    fc.numero_autorizacion,
+    fc.uuid_certificacion,
+    fc.numero_documento,
+    fc.serie,
+    fc.correlativo,
+    fc.tipo_documento,
+    fc.fecha_emision,
+    fc.fecha_certificacion,
+    ec.nit AS establecimiento_nit,
+    ec.nombre_comercial AS establecimiento_nombre,
+    fc.nit_receptor,
+    fc.razon_social_receptor,
+    fc.subtotal,
+    fc.total_descuentos,
+    fc.total_iva,
+    fc.total_factura,
+    fc.cantidad_items,
+    fc.estado_certificacion,
+    fc.fecha_anulacion,
+    fc.motivo_anulacion,
+    t.fecha_solicitud,
+    t.tiempo_procesamiento_ms
+FROM facturas_certificadas fc
+INNER JOIN establecimientos_certificados ec ON fc.id_establecimiento_cert = ec.id_establecimiento_cert
+INNER JOIN transacciones_certificacion t ON fc.id_transaccion = t.id_transaccion;
+
+CREATE OR REPLACE VIEW vista_estadisticas_establecimientos AS
+SELECT
+    ec.id_establecimiento_cert,
+    ec.nit,
+    ec.nombre_comercial,
+    ec.estado_certificador,
+    COUNT(fc.id_factura_cert) as total_facturas_certificadas,
+    COUNT(fc.id_factura_cert) FILTER (WHERE fc.estado_certificacion = 'VIGENTE') as facturas_vigentes,
+    COUNT(fc.id_factura_cert) FILTER (WHERE fc.estado_certificacion = 'ANULADA') as facturas_anuladas,
+    COALESCE(SUM(fc.total_factura), 0) as monto_total_facturado,
+    COALESCE(SUM(fc.total_iva), 0) as monto_total_iva,
+    ec.facturas_emitidas_hoy,
+    ec.limite_facturas_diarias
+FROM establecimientos_certificados ec
+LEFT JOIN facturas_certificadas fc ON ec.id_establecimiento_cert = fc.id_establecimiento_cert
+GROUP BY ec.id_establecimiento_cert;
+
+CREATE OR REPLACE VIEW vista_transacciones_recientes AS
+SELECT
+    t.id_transaccion,
+    t.uuid_transaccion,
+    t.fecha_solicitud,
+    t.fecha_respuesta,
+    ec.nit AS establecimiento_nit,
+    ec.nombre_comercial AS establecimiento_nombre,
+    t.exitosa,
+    t.codigo_respuesta,
+    t.mensaje_respuesta,
+    t.numero_autorizacion,
+    t.tiempo_procesamiento_ms,
+    t.total_factura
+FROM transacciones_certificacion t
+INNER JOIN establecimientos_certificados ec ON t.id_establecimiento_cert = ec.id_establecimiento_cert
+ORDER BY t.fecha_solicitud DESC
+LIMIT 100;
+
+
+-- TABLA DE USUARIOS PARA ACCESO AL SISTEMA ADMINISTRATIVO
+CREATE TABLE usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE, -- Nombre de usuario para el login
+    password_hash TEXT NOT NULL,          -- Contraseña en formato hash (nunca texto plano)
+    email VARCHAR(150) UNIQUE NOT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    rol VARCHAR(50) NOT NULL DEFAULT 'OPERADOR', -- Ej: ADMIN, SUPERVISOR, OPERADOR, etc.
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ultimo_login TIMESTAMP,
+    -- Podrías relacionar al usuario con un establecimiento si fuera necesario, pero por ahora lo dejamos independiente
+    -- id_establecimiento_cert INTEGER,
+    -- FOREIGN KEY (id_establecimiento_cert) REFERENCES establecimientos_certificados(id_establecimiento_cert),
+    CONSTRAINT chk_rol CHECK (rol IN ('ADMIN', 'SUPERVISOR', 'OPERADOR', 'VISOR'))
+);
+
+-- Índice para búsquedas rápidas por nombre de usuario y email
+CREATE INDEX idx_usuarios_username ON usuarios(username);
+CREATE INDEX idx_usuarios_email ON usuarios(email);
+
+
