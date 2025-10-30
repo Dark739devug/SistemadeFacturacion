@@ -9,10 +9,8 @@ export default function Login() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    correoElectronico: '',
-    contrasena: ''
-
-  
+    email: '',
+    password: ''
   });
 const handleChange = (e) => {
   setFormData({
@@ -24,29 +22,43 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   
 try {
-   const response = await fetch('http://localhost:9090/api/auth/token', {
+  const response = await fetch('http://localhost:9090/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
       });
 
-  const dataText= await response.text();
+  // leer cuerpo como texto y intentar extraer token si viene en JSON
+  const raw = await response.text();
+  let token = null;
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed) {
+        if (typeof parsed === 'string') token = parsed;
+        else token = parsed.accessToken || parsed.token || parsed.jwt || parsed.access_token || null;
+      }
+    } catch (e) {
+      // no JSON
+      token = raw.trim();
+    }
+  }
 
-   if (response.ok && dataText.trim() !== '') {
-        
-     localStorage.setItem('accessToken', dataText);
-    localStorage.setItem('nombre', formData.correoElectronico || '');
+  if (response.ok && token) {
+     // guardar sólo la cadena del token
+     localStorage.setItem('accessToken', token);
+     localStorage.setItem('nombre', formData.email || '');
 
-       toast.success(`Bienvenido ${formData.correoElectronico}`, {
-        position: 'top-center',
-      });
-       router.push('/dashboard');
-      } else {
-        toast.error(
-           'Credenciales incorrectas', {
-          position: 'top-center',
-        });
-
+     toast.success(`Bienvenido ${formData.email}`, { position: 'top-center' });
+     router.push('/dashboard');
+  } else {
+    // intentar mostrar mensaje de backend si lo hay
+    let serverMsg = 'Credenciales incorrectas';
+    try {
+      const parsed = JSON.parse(raw || '{}');
+      serverMsg = parsed.message || parsed.error || serverMsg;
+    } catch (e) {}
+    toast.error(serverMsg, { position: 'top-center' });
   }
 
 }
@@ -82,9 +94,9 @@ return (
          
     <input
       type="email"
-      name="correoElectronico"
+      name="email"
       placeholder="Correo Electrónico"
-      value={formData.correoElectronico}
+      value={formData.email}
       onChange={handleChange}
       required
       className={styles.input}
@@ -101,15 +113,15 @@ return (
           <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
           <path d="M12 2a5 5 0 0 1 5 5v3a3 3 0 0 1 3 3v6a3 3 0 0 1 -3 3h-10a3 3 0 0 1 -3 -3v-6a3 3 0 0 1 3 -3v-3a5 5 0 0 1 5 -5m0 12a2 2 0 0 0 -1.995 1.85l-.005 .15a2 2 0 1 0 2 -2m0 -10a3 3 0 0 0 -3 3v3h6v-3a3 3 0 0 0 -3 -3" /></svg>
         
-            <input
-            type={showPassword ? 'text' : 'password'}
-            name="contrasena"
-            placeholder="Contraseña"
-            value={formData.contrasena}
-            onChange={handleChange}
-            required
-            className={styles.input}
-      />
+    <input
+    type={showPassword ? 'text' : 'password'}
+    name="password"
+    placeholder="Contraseña"
+    value={formData.password}
+    onChange={handleChange}
+    required
+    className={styles.input}
+  />
         <button
         type="button"
         className={styles.eyeButton}

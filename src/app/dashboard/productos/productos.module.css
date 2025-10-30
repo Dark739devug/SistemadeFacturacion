@@ -1,0 +1,105 @@
+/* estilos simplificados y profesionales para Productos */
+.page{ display:flex; min-height:100vh; background:#f6f8fa; }
+.content{ flex:1; padding:28px 36px; }
+.header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.header h1{ margin:0; color:#0f1724; font-size:1.25rem; font-weight:700; }
+.addBtn{ background:#2b7be4; color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
+.controls{ display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+.search{ padding:10px 12px; border-radius:8px; border:1px solid #e6e9ee; width:420px; background:#fff; color:#0f1724; }
+.search::placeholder{ color:#94a3b8; }
+.tableWrap{ background:#fff; border-radius:10px; padding:12px; box-shadow:0 6px 18px rgba(2,6,23,0.04); }
+.table{ width:100%; border-collapse:collapse; }
+.table th{ text-align:left; font-weight:700; padding:12px 8px; color:#475569; font-size:0.95rem; border-bottom:1px solid #eef2f7; }
+.table td{ padding:12px 8px; border-bottom:1px solid #f3f6f9; color:#0f1724; vertical-align:middle; }
+.table th:last-child, .table td:last-child { text-align:center; }
+.table td { white-space: nowrap; }
+.empty{ text-align:center; padding:28px; color:#64748b; }
+.nameCol{ font-weight:600; color:#0b3a66; }
+.stockCol {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 150px;
+}
+
+.stockBar {
+  flex: 1;
+  max-width: 130px;
+  height: 10px;
+  background: #eef2f7;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  top: 1px;
+}
+
+.stockFill {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #10b981);
+  transition: width 0.3s ease;
+}
+
+.stockNum {
+  min-width: 28px;
+  text-align: right;
+  font-size: 0.95rem;
+  color: #334155;
+}
+.stockCell {
+  /* Contenedor de toda la celda */
+  min-width: 160px;
+  text-align: left;
+}
+
+.stockContainer {
+  /* Contenedor interno con barra y número alineados */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.stockBar {
+  /* Barra de fondo */
+  flex: 1;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.stockFill {
+  /* Relleno dinámico del stock */
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.stockNumber {
+  /* Número del stock */
+  width: 28px;
+  text-align: right;
+  font-size: 0.95rem;
+  color: #334155;
+}
+.actionsCol{ display:flex; gap:8px; justify-content:center; align-items:center; }
+.iconBtn{ background:transparent; border:1px solid #e6e9ee; padding:6px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.iconBtn svg{ width:16px; height:16px; display:block; }
+.iconBtnDanger{ background:transparent; border:1px solid #ffd1d1; color:#dc2626; padding:6px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.iconBtnDanger svg{ width:16px; height:16px; display:block; }
+
+/* ensure actions column has enough width and buttons don't wrap to next line */
+.table td:last-child { width:140px; }
+.loader{ padding:28px; text-align:center; color:#64748b; }
+.pagination{ display:flex; gap:8px; align-items:center; justify-content:flex-end; padding-top:8px; }
+.pagination button{ padding:6px 8px; border-radius:6px; border:1px solid #e6e9ee; background:#000000; cursor:pointer; }
+.pagination button:disabled{ opacity:0.5; cursor:not-allowed; }
+.pageInfo{ color:#475569; margin:0 8px; }
+
+/* responsive */
+@media (max-width: 880px){
+  .search{ width:100%; }
+  .page{ flex-direction:column; }
+  .content{ padding:16px; }
+}

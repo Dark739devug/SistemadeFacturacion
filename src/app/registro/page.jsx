@@ -8,55 +8,35 @@ import 'react-toastify/dist/ReactToastify.css';
 export default function CrearAgencia() {
   const router = useRouter();
   const [form, setForm] = useState({
-    nit: '',
     nombre: '',
     apellido: '',
-    fecha_de_nacimiento: '',
-    dpi: '',
-    correo: '',
-    contraseña: ''
+    email: '',
+    contrasena: ''
   });
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const fieldLabels = {
-    nit: 'NIT',
     nombre: 'Nombre',
     apellido: 'Apellido',
-    fecha_de_nacimiento: 'Fecha de Nacimiento',
-    dpi: 'DPI',
-    correo: 'Correo Electrónico',
-    contraseña: 'Contraseña'
+    email: 'Correo Electrónico',
+    contrasena: 'Contraseña'
   };
   const [success, setSuccess] = useState(false);
 
   function validateField(name, value) {
     const v = String(value || '').trim();
-    if (name === 'nit' || name === 'dpi') {
-      if (!v) return 'Campo obligatorio.';
-      if (!/^\d+$/.test(v)) return 'Solo se permiten números.';
-      return '';
-    }
     if (name === 'nombre' || name === 'apellido') {
       if (!v) return 'Campo obligatorio.';
       if (!/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s'-]+$/.test(v)) return 'Solo letras y espacios.';
       return '';
     }
-    if (name === 'fecha_de_nacimiento') {
-      if (!v) return 'Campo obligatorio.';
-      const selected = new Date(v);
-      const today = new Date();
-      selected.setHours(0,0,0,0);
-      today.setHours(0,0,0,0);
-      if (selected > today) return 'No puede seleccionar una fecha futura.';
-      return '';
-    }
-    if (name === 'correo') {
+    if (name === 'email') {
       if (!v) return 'Campo obligatorio.';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Ingrese un correo válido.';
       return '';
     }
-    if (name === 'contraseña') {
+    if (name === 'contrasena') {
       if (!v) return 'Campo obligatorio.';
       if (v.length < 4) return 'La contraseña debe tener al menos 4 caracteres.';
       return '';
@@ -74,7 +54,7 @@ export default function CrearAgencia() {
 
   function validate() {
     const validation = {};
-    ['nit','nombre','apellido','fecha_de_nacimiento','dpi','correo','contraseña'].forEach(k => {
+    ['nombre','apellido','email','contrasena'].forEach(k => {
       const err = validateField(k, form[k]);
       if (err) validation[k] = err;
     });
@@ -88,7 +68,7 @@ export default function CrearAgencia() {
   if (hasErrors) {
     setErrors(validation);
     // encontrar el primer campo con error en el orden deseado
-    const order = ['nit','nombre','apellido','fecha_de_nacimiento','dpi','correo','contraseña'];
+    const order = ['nombre','apellido','email','contrasena'];
     const firstKey = order.find(k => validation[k]);
     const firstMsg = firstKey ? `${fieldLabels[firstKey]}: ${validation[firstKey]}` : 'Hay errores en el formulario.';
     toast.error(firstMsg);
@@ -101,18 +81,16 @@ export default function CrearAgencia() {
   }
   setError('');
 
-  try {
+    try {
     const response = await fetch('http://localhost:9090/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nit: form.nit,
         nombre: form.nombre,
         apellido: form.apellido,
-        fechaNacimiento: form.fecha_de_nacimiento,  
-        dpi: form.dpi,
-        correoElectronico: form.correo,             
-        contrasena: form.contraseña               
+        email: form.email,
+        contrasena: form.contrasena,
+        idRol: 2
       })
     });
 
@@ -158,20 +136,6 @@ export default function CrearAgencia() {
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <div className={styles.row}>
             <label className={styles.label}>
-              <span className={styles.labelText}>NIT</span>
-              <input name="nit" value={form.nit || ''} onChange={handleChange} className={`${styles.input} ${errors.nit ? styles.invalid : ''}`} required />
-              
-            </label>
-
-            <label className={styles.label}>
-              <span className={styles.labelText}>DPI</span>
-              <input name="dpi" value={form.dpi || ''} onChange={handleChange} className={`${styles.input} ${errors.dpi ? styles.invalid : ''}`} required />
-              
-            </label>
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label}>
               <span className={styles.labelText}>Nombre</span>
               <input name="nombre" value={form.nombre || ''} onChange={handleChange} className={`${styles.input} ${errors.nombre ? styles.invalid : ''}`} required />
             </label>
@@ -180,11 +144,6 @@ export default function CrearAgencia() {
               <span className={styles.labelText}>Apellido</span>
               <input name="apellido" value={form.apellido || ''} onChange={handleChange} className={`${styles.input} ${errors.apellido ? styles.invalid : ''}`} required />
             </label>
-
-            <label className={styles.label}>
-              <span className={styles.labelText}>Fecha de Nacimiento</span>
-              <input name="fecha_de_nacimiento" type="date" value={form.fecha_de_nacimiento || ''} onChange={handleChange} className={`${styles.input} ${errors.fecha_de_nacimiento ? styles.invalid : ''}`} required max={new Date().toISOString().split('T')[0]} />
-          </label>
           </div>
 
           <div className={styles.row}>
@@ -194,14 +153,14 @@ export default function CrearAgencia() {
                 <span className={styles.fieldIcon} aria-hidden>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8.5l9 6 9-6" stroke="#0f1724" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="5" width="18" height="14" rx="2" stroke="#0f1724" strokeWidth="1.2"/></svg>
                 </span>
-                <input name="correo" type="email" value={form.correo || ''} onChange={handleChange} className={`${styles.input} ${styles.withLeftIcon} ${errors.correo ? styles.invalid : ''}`} required />
+                <input name="email" type="email" value={form.email || ''} onChange={handleChange} className={`${styles.input} ${styles.withLeftIcon} ${errors.email ? styles.invalid : ''}`} required />
               </div>
             </label>
 
             <label className={`${styles.label} ${styles.col}`}>
               <span className={styles.labelText}>Contraseña</span>
               <div className={styles.passwordFieldWrap}>
-                <input name="contraseña" type={showPassword ? 'text' : 'password'} value={form.contraseña || ''} onChange={handleChange} className={`${styles.input} ${styles.passwordInput} ${errors.contraseña ? styles.invalid : ''}`} required />
+                <input name="contrasena" type={showPassword ? 'text' : 'password'} value={form.contrasena || ''} onChange={handleChange} className={`${styles.input} ${styles.passwordInput} ${errors.contrasena ? styles.invalid : ''}`} required />
                 <button type="button" className={styles.eyeButton} onClick={() => setShowPassword(s => !s)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                   {showPassword ? (
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
