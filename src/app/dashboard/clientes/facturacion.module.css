@@ -1,0 +1,167 @@
+.container {
+  width: 100%;
+  padding: 2rem;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.titulo {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.boton {
+  display: flex;
+  gap: 8px;  
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.boton:hover {
+  background-color: #1d4ed8;
+}
+
+.filterBar {
+  margin-bottom: 1.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.input:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.factura {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.factura th {
+  background-color: #e5e7eb;
+  text-align: left;
+  padding: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.factura td {
+  padding: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  color: #111827;
+}
+
+.factura tr:hover {
+  background-color: #f9fafb;
+}
+
+.statusActive {
+  background-color: #dcfce7;
+  color: #166534;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.statusInactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.actionsCol {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.iconBtn,
+.iconBtnDanger {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.iconBtn:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.iconBtnDanger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+}
+
+.pagination button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.pagination button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.loader,
+.error,
+.empty {
+  text-align: center;
+  padding: 1rem;
+  color: #6b7280;
+}
+
+.error {
+  color: #dc2626;
+}
