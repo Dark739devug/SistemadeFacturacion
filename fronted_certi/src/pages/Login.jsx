@@ -1,11 +1,8 @@
 // src/pages/LoginPage.jsx
 
 import React, { useState } from 'react';
-// Importamos el estilo CSS
 import '../assets/styles/LoginPage.css'; 
-// Importamos el servicio de autenticación
 import { login } from '../services/userService.js';
-// ⬇️ Descomentar e importar useNavigate para la redirección
 import { useNavigate } from 'react-router-dom'; 
 
 function LoginPage() {
@@ -13,7 +10,6 @@ function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
     
-    // ⬇️ Inicializar el hook de navegación
     const navigate = useNavigate(); 
 
     const handleSubmit = async (e) => {
@@ -21,30 +17,26 @@ function LoginPage() {
         setError(null); // Limpiar error al enviar
 
         try {
-            // Llama a tu función de servicio que se conecta a Spring Boot
-            const response = await login(username, password); 
+            // Creamos el objeto de credenciales correcto
+            const credentials = { username, password };
+            const response = await login(credentials); 
             
             console.log('Autenticación exitosa. Token guardado en localStorage.', response);
             
-            // ⬇️ Redirigir al usuario al área protegida
+            // Redirigir al usuario al área protegida
             navigate('/dashboard'); 
-            // Eliminamos el 'alert' simulado, ya que la redirección lo reemplaza.
 
         } catch (err) {
-            // Maneja la respuesta de error de tu API de Spring Boot
-            // El backend típicamente retorna un código de estado 401 (Unauthorized)
             setError('Credenciales inválidas. Por favor, verifica el usuario y la contraseña.');
-            // console.error(err); // Opcional: ver el error completo en consola
+            console.error(err); // Para depuración
         }
     };
 
     return (
-        // Contenedor principal con el estilo del fondo
         <div className="login-page-container">
             <div className="login-form-card">
                 <h2>Iniciar Sesión</h2>
                 
-                {/* Muestra el mensaje de error si existe */}
                 {error && <p className="error-message">{error}</p>}
                 
                 <form onSubmit={handleSubmit}>

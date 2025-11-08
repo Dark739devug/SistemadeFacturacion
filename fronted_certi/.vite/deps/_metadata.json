@@ -1,0 +1,52 @@
+{
+  "hash": "0a63478b",
+  "configHash": "1e4a8205",
+  "lockfileHash": "6b6ec564",
+  "browserHash": "fb6b917e",
+  "optimized": {
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "0033ade8",
+      "needsInterop": false
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "a72df388",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.js",
+      "file": "react-router-dom.js",
+      "fileHash": "b649628b",
+      "needsInterop": false
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "391ff191",
+      "needsInterop": true
+    },
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "22902fdc",
+      "needsInterop": true
+    }
+  },
+  "chunks": {
+    "chunk-DbKvDyjX": {
+      "file": "chunk-DbKvDyjX.js",
+      "isDynamicEntry": false
+    },
+    "react-Dzmm40ca": {
+      "file": "react-Dzmm40ca.js",
+      "isDynamicEntry": false
+    },
+    "react-dom-Bu4ag0_3": {
+      "file": "react-dom-Bu4ag0_3.js",
+      "isDynamicEntry": false
+    }
+  }
+}
