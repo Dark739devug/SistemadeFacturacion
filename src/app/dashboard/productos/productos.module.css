@@ -16,8 +16,26 @@
 .addBtn:hover{ transform: translateY(-2px); box-shadow:0 12px 30px rgba(129,231,175,0.22); }
 .addBtn:active{ transform: translateY(0); box-shadow:0 6px 16px rgba(129,231,175,0.14); }
 .controls{ display:flex; gap:12px; align-items:center; margin-bottom:12px; }
-.search{ padding:10px 12px; border-radius:8px; border:1px solid #e6e9ee; width:420px; background:#fff; color:#0f1724; }
+.search{
+  padding:10px 12px 10px 42px; 
+  border-radius:999px;
+  border:1px solid #e6e9ee;
+  width:420px;
+  background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'><path stroke='%230f1724' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z'/></svg>") no-repeat 12px center;
+  background-size:16px 16px;
+  color:#0f1724;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.03);
+  transition: box-shadow .14s ease, border-color .12s ease, transform .08s ease;
+}
 .search::placeholder{ color:#94a3b8; }
+.search:focus{
+  outline: none;
+  border-color: #309898;
+  box-shadow: 0 8px 28px rgba(48,152,152,0.12);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px){ .search{ width:100%; padding-left:38px; } }
 .filterSelect{ padding:10px 12px; border-radius:8px; border:1px solid #e6e9ee; background:#fff; color:#0f1724; cursor:pointer; }
 .filterSelect:focus{ outline:2px solid rgba(77,168,218,0.18); }
 .tableWrap{ background:#fff; border-radius:10px; padding:12px; box-shadow:0 6px 18px rgba(2,6,23,0.04); }
@@ -121,16 +139,32 @@
 .iconBtnDanger{ background:transparent; border:1px solid #ffd1d1; color:#dc2626; padding:6px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .iconBtnDanger svg{ width:16px; height:16px; display:block; }
 
-/* apariencia cuando el botón de eliminar está deshabilitado por permisos */
-.iconBtnDanger[disabled], .iconBtnDanger[aria-disabled="true"]{
-  opacity:0.5;
-  cursor:not-allowed;
-  border-color: rgba(156,163,175,0.28);
-  color: rgba(15,23,36,0.45);
-  background: transparent;
+/* Botones de acción con caja y color (reutilizables en Productos) */
+.actionBtn, .actionBtnDanger{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  padding:0;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(2,6,23,0.06);
+  transition: transform .12s ease, box-shadow .12s ease;
 }
+.actionBtn:hover, .actionBtnDanger:hover{ transform: translateY(-2px); box-shadow: 0 12px 28px rgba(2,6,23,0.08); }
+.actionBtn:focus, .actionBtnDanger:focus{ outline: 3px solid rgba(59,130,246,0.18); }
 
-/* ensure actions column has enough width and buttons don't wrap to next line */
+.actionBtn{ background: linear-gradient(90deg,#e6f5ff,#d6ebff); }
+.actionBtn svg{ stroke:#0b2a4a; }
+
+.actionBtnDanger{ background: linear-gradient(90deg,#fff1f2,#ffdede); }
+.actionBtnDanger svg{ stroke:#b91c1c; }
+
+
+
+/* estilos para los botones y numeros de paginas */
 .table td:last-child { width:140px; }
 .loader{ padding:28px; text-align:center; color:#64748b; }
 .pagination{ display:flex; gap:12px; align-items:center; justify-content:space-between; padding-top:12px; }
@@ -155,7 +189,7 @@
 }
 .categoryBadge.small{ padding:4px 8px; font-size:0.78rem; }
 
-/* Status badge for Activo / Inactivo */
+/* Estado Activo / Inactivo */
 .statusBadge{
   display:inline-block;
   padding:5px 9px;
@@ -177,7 +211,7 @@
   border:1px solid rgba(15,23,36,0.06);
 }
 
-/* IVA badge */
+/* IVA  */
 .ivaBadge{
   display:inline-block;
   padding:5px 8px;
@@ -247,15 +281,15 @@
 @media (max-width: 720px){
   .modalGrid{ grid-template-columns: 1fr; }
 }
-.label{ font-size:0.82rem; color:#556b7a; margin:0 0 8px 0; font-weight:600; transition: color .16s ease, transform .18s ease; }
+.label{ display:flex; flex-direction:column; font-size:0.85rem; color:#34444f; }
 .field{ position: relative; }
 .input{ padding:12px 14px; border-radius:10px; border:1px solid #e8eef6; width:100%; background: linear-gradient(180deg, #ffffff, #fbfdff); color:#0f1724; box-sizing:border-box; font-size:0.95rem; transition: box-shadow .14s ease, border-color .14s ease, transform .12s ease; }
 .input:focus{ outline: none; border-color: rgba(74,163,240,0.9); box-shadow: 0 6px 18px rgba(74,163,240,0.12); transform: translateY(-1px); }
 
-/* label effect when field focused */
+/* efectos en los labels resaltado */
 .field:focus-within .label{ color: #0b3a66; transform: translateY(-4px) scale(0.98); }
 
-/* subtle placeholder style */
+/* sutil para los placeholders */
 .input::placeholder{ color: #9aa7b6; }
 .input[type="number"]{ -moz-appearance:textfield; -webkit-appearance:textfield; appearance:textfield; }
 .input[type="number"]::-webkit-outer-spin-button,
@@ -267,7 +301,7 @@
 .cancelBtn{ background:transparent; color:#0f1724; border:2px solid rgba(15,23,42,0.06); padding:8px 12px; border-radius:10px; cursor:pointer; transition: background .12s ease, transform .12s ease; }
 .cancelBtn:hover{ background: rgba(15,23,42,0.03); transform: translateY(-1px); }
 
-/* inline validation error text: keep present for a11y but hide visually */
+/* validacion para errores */
 .errorText{
   position: absolute !important;
   width: 1px !important;
@@ -280,14 +314,15 @@
   border: 0 !important;
 }
 
-/* disabled state for save/create buttons */
+/* deshabilitado para botones de guardar/crear */
 .saveBtn[disabled]{ opacity:0.55; cursor:not-allowed; transform:none; box-shadow:none; }
 
+/* utilidad pequeña para inputs: anillo de enfoque para accesibilidad */
 @media (max-width: 720px){
   .modal{ width: calc(100% - 32px); height: calc(100vh - 40px); max-height: none; border-radius:10px; }
   .modalBody{ padding:12px; gap:10px; }
   .modalHeader{ padding:10px 12px; }
 }
 
-/* small utility for inputs: focus ring for accessibility */
+/* utilidad pequeña para inputs: anillo de enfoque para accesibilidad */
 .input:focus-visible{ box-shadow: 0 8px 24px rgba(74,163,240,0.12); }

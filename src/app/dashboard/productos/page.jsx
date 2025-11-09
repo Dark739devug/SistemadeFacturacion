@@ -44,7 +44,7 @@ export default function ProductosPage() {
   const [searchTimer, setSearchTimer] = useState(null);
   const [page, setPage] = useState(1);
   // items por página en este caso seran 6 en la tabla 
-  const perPage = 6;
+  const perPage = 5;
   const [error, setError] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -349,26 +349,97 @@ export default function ProductosPage() {
     // esto porque algunos tokens pueden tener diferentes estructuras y nombres de claves
     // con esta funcion se intenta extraer el rol de usuario para controlar permisos en la UI
   function getRoleFromToken(token) {
-    if (!token) return null;
     try {
-      // intentar decodificar JWT
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        const payload = parts[1];
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-        const json = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        const obj = JSON.parse(json);
-        // buscar claves comunes que indiquen rol
-        return obj.idRol || obj.id_rol || obj.role || obj.roles || obj.rol || obj.roleId || obj.role_id || null;
+      // Si viene un token JWT, intentar decodificar
+      if (token) {
+        const parts = String(token).split('.');
+        if (parts.length === 3) {
+          const payload = parts[1];
+          const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+          const json = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          const obj = JSON.parse(json);
+          // buscar claves comunes que indiquen rol o scope
+          const candidate = obj.idRol ?? obj.id_rol ?? obj.role ?? obj.roles ?? obj.rol ?? obj.roleId ?? obj.role_id ?? obj.scope ?? null;
+          if (candidate != null) {
+            // mapear a número si es necesario
+            if (typeof candidate === 'number') return candidate;
+            if (typeof candidate === 'string') {
+              const s = candidate.trim();
+              if (/^\d+$/.test(s)) return Number(s);
+              const lc = s.toLowerCase();
+              if (lc.includes('admin')) return 1;
+              if (lc.includes('fact')) return 2;
+              // si viene un array en roles, intentar tomar la primera coincidencia
+              if (s) return s;
+            }
+            if (Array.isArray(candidate) && candidate.length > 0) return candidate[0];
+          }
+        }
+
+        // Si no es JWT, intentar parsear token como JSON/valor plano (algunas apps almacenan rol directamente)
+        try {
+          const parsed = JSON.parse(token);
+          if (parsed && (parsed.idRol || parsed.rol || parsed.role)) return parsed.idRol ?? parsed.rol ?? parsed.role;
+          if (typeof parsed === 'string' || typeof parsed === 'number') return parsed;
+        } catch (e) {
+          // no es JSON, puede ser un string simple con el rol
+          if (/^\d+$/.test(String(token).trim())) return String(token).trim();
+        }
       }
     } catch (e) {
-      // no es JWT o no contiene rol
+      // ignorarar errores de parsing (parsing significa que no es JWT)
     }
-    // fallback: check stored raw role in storage
-    const stored = localStorage.getItem('rol') || localStorage.getItem('idRol') || localStorage.getItem('role');
-    if (stored) return stored;
+
+    // aqui se hace fallback: revisar rol almacenado en storage (para apps que guardan rol por separado)
+    const keys = ['rol','idRol','role','user','usuario','currentUser','session','auth','profile'];
+    for (const k of keys) {
+      try {
+        const v = localStorage.getItem(k) || sessionStorage.getItem(k);
+        if (!v) continue;
+        // si es JSON, parsear y buscar campos
+        try {
+          const parsed = JSON.parse(v);
+          if (parsed) {
+            const cand = parsed.idRol ?? parsed.rol ?? parsed.role ?? parsed.scope ?? parsed.token ?? null;
+            if (cand != null) {
+              if (typeof cand === 'number') return cand;
+              if (typeof cand === 'string') {
+                const s = cand.trim();
+                if (/^\d+$/.test(s)) return Number(s);
+                const lc = s.toLowerCase();
+                if (lc.includes('admin')) return 1;
+                if (lc.includes('fact')) return 2;
+                return s;
+              }
+            }
+            // si no se encuentra, intentar buscar directamente en el objeto parseado
+            if (parsed.rol || parsed.role || parsed.idRol) {
+              const s = parsed.rol ?? parsed.role ?? parsed.idRol;
+              if (typeof s === 'number') return s;
+              if (typeof s === 'string') {
+                const lc = s.toLowerCase();
+                if (lc.includes('admin')) return 1;
+                if (lc.includes('fact')) return 2;
+                if (/^\d+$/.test(s)) return Number(s);
+                return s;
+              }
+            }
+          }
+        } catch (e) {
+          // no es JSON, v puede ser el rol directamente
+          const s = String(v).trim();
+          if (/^\d+$/.test(s)) return Number(s);
+          const lc = s.toLowerCase();
+          if (lc.includes('admin')) return 1;
+          if (lc.includes('fact')) return 2;
+          return s;
+        }
+      } catch (e) {
+        // ignorar errores y continuar
+      }
+    }
     return null;
   }
 
@@ -602,7 +673,7 @@ export default function ProductosPage() {
                       <td className={styles.actionsCol}>
                         <button
                           aria-label="Editar" 
-                          className={styles.iconBtn}
+                          className={`${styles.iconBtn} ${styles.actionBtn}`}
                           title="Editar Producto"
                           onClick={() => {
                             // abrir modal con datos del producto seleccionado
@@ -621,34 +692,26 @@ export default function ProductosPage() {
                           }}
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#0f1724" />
-                            <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#0f1724" />
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                            <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                           </svg>
                         </button>
-                        <button
-                          aria-label="Eliminar"
-                          className={styles.iconBtnDanger}
-                          onClick={() => {
-                            // aqui se valida el rol antes de eliminar
-                            if (Number(userRole) !== 1) {
-                              toast.error('No tienes permiso para eliminar productos');
-                              return;
-                            }
-                            handleDelete(p.id || p.codigo);
-                          }}
-                          disabled={Number(userRole) !== 1}
-                          title={Number(userRole) !== 1 ? 'No tienes permiso para eliminar' : 'Eliminar producto'}
-                          aria-disabled={Number(userRole) !== 1}
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                            <path d="M3 6h18" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M10 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M14 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M9 6l1-2h4l1 2" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                        
+                        {Number(userRole) === 1 && (
+                          <button
+                            aria-label="Eliminar"
+                            className={`${styles.iconBtnDanger} ${styles.actionBtnDanger}`}
+                            onClick={() => handleDelete(p.id || p.codigo)}
+                            title="Eliminar producto"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                              <path d="M3 6h18" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M10 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M14 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M9 6l1-2h4l1 2" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1047,11 +1110,11 @@ export default function ProductosPage() {
                             return;
                           }
 
-                          // refresh products list
+                          // refrescar lista
                           await fetchProductos();
                           toast.success('Producto creado');
                           setIsCreateModalOpen(false);
-                          // reset newProduct
+                          // resetear formulario
                           setNewProduct({ codigoProducto:'', nombreProducto:'', descripcion:'', idCategoria: null, idEstablecimiento: null, precioUnitario:0, stockActual:0, unidadMedida:'', aplicaIva:true });
                         } catch (err) {
                           console.error('Error creando producto', err);
@@ -1075,7 +1138,7 @@ export default function ProductosPage() {
                     const start = Math.max(1, page - 2);
                     const end = Math.min(totalPages, page + 2);
                     for (let p = start; p <= end; p++) pages.push(p);
-                    // ensure first page visible
+                    // agregar controles de salto si es necesario
                     if (start > 1) {
                       pages.unshift(1);
                       if (start > 2) pages.splice(1, 0, 'dots-start');
