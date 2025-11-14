@@ -30,28 +30,33 @@ try {
 
   // leer cuerpo como texto y intentar extraer token si viene en JSON
   const raw = await response.text();
+
   let token = null;
-  if (raw) {
+ 
+
+  if (response.ok && raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (parsed) {
-        if (typeof parsed === 'string') token = parsed;
-        else token = parsed.accessToken || parsed.token || parsed.jwt || parsed.access_token || null;
-      }
+     const token = parsed.token || parsed.accessToken || parsed.jwt || parsed.access_token || null;
+     const nombre = parsed.nombre || parsed.name || '';
+     const email = parsed.email || formData.email || '';
+     const rol = parsed.rol || parsed.role || '';
+     if (token) {
+       localStorage.setItem('accessToken', token);
+       localStorage.setItem('nombre', nombre);
+       localStorage.setItem('email', email);
+       localStorage.setItem('rol', rol);
+       toast.success(`Bienvenido ${nombre}`, { position: 'top-center' });
+       router.push('/dashboard');
+       return;
+     }
     } catch (e) {
       // no JSON
       token = raw.trim();
     }
   }
 
-  if (response.ok && token) {
-     // guardar sólo la cadena del token
-     localStorage.setItem('accessToken', token);
-     localStorage.setItem('nombre', formData.email || '');
-
-     toast.success(`Bienvenido ${formData.email}`, { position: 'top-center' });
-     router.push('/dashboard');
-  } else {
+  else {
     // intentar mostrar mensaje de backend si lo hay
     let serverMsg = 'Credenciales incorrectas';
     try {

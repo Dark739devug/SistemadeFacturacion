@@ -3,7 +3,7 @@
 import React from 'react';
 import styles from './facturacion.module.css';
 import { ToastContainer } from 'react-toastify';
-import Sidebar from '../../components/Sidebar';
+
 
 
 
@@ -21,6 +21,7 @@ export default function Factura() {
 
       <div className={styles.filterBar}>
         <input
+        
           type="search"
           placeholder="Buscar factura o cliente..."
           className={styles.input}
@@ -49,7 +50,7 @@ export default function Factura() {
 
       </div>
 
-      <table className={styles.factura}>
+      <table className={styles.table}>
         <thead>
           <tr>
             <th>Factura No.</th>

@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, use } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from '../dashboard/dashboard.module.css';
 
@@ -7,6 +7,18 @@ import styles from '../dashboard/dashboard.module.css';
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [nombre, setNombre] = useState('');
+  const [email, setEmail] = useState('');
+  const [rol, setRol] = useState('');
+   
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setNombre(localStorage.getItem('nombre') || '');
+      setEmail(localStorage.getItem('email') || '');
+      setRol(localStorage.getItem('rol') || '');
+    }
+  }, []);
+
 
   const navItems = useMemo(() => [
     { key: 'panel', label: 'Panel', href: '/dashboard', icon: 'home' },
@@ -110,8 +122,9 @@ export default function Sidebar() {
           
 
           <div className={styles.profileInfo}>
-            <div style={{fontWeight:700}}>Usuario Admin</div>
-            <div style={{fontSize:'.85rem', color:'var(--muted)'}}>admin@example.com</div>
+            <div style={{fontWeight:700}}>{localStorage.getItem('nombre')}</div>
+            <div style={{fontSize:'.85rem', color:'var(--muted)'}}>{localStorage.getItem('email')}</div>
+            <div style={{fontSize:'.75rem', color:'var(--muted)'}}>{localStorage.getItem('rol')}</div>
           </div>
         </div>
 

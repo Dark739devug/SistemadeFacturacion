@@ -125,3 +125,8 @@
     font-size: 2rem;
   }
 }
+
+.table{ width:100%; border-collapse:collapse;  font-size:0.9rem; }
+.table th{ text-align:left; font-weight:700; padding:12px 8px; color:#475569; font-size:0.85rem; border-bottom:1px solid #eef2f7; }
+.table td{ font-size:0.79rem; }
+.tableWrap{ overflow:hidden; }
