@@ -1,5 +1,4 @@
 // src/services/userService.js
-
 import api from './api.js';
 
 const LOGIN_URL = '/api/auth/login';
@@ -13,13 +12,20 @@ export const login = async (credentials) => {
     try {
         const response = await api.post(LOGIN_URL, credentials);
 
-        if (response.data && response.data.token) {
+        // Validar estructura de respuesta
+        if (response?.data?.token) {
             localStorage.setItem('userToken', response.data.token);
+            return response.data;
+        } else {
+            throw new Error('El servidor no devolvió un token.');
         }
-
-        return response.data;
     } catch (error) {
-        console.error('Error al iniciar sesión:', error);
+        // Log limpio para depuración
+        if (error.response) {
+            console.error('❌ Error en login:', error.response.data);
+        } else {
+            console.error('❌ Error al conectar con el servidor:', error.message);
+        }
         throw error;
     }
 };
@@ -32,7 +38,12 @@ export const getAllUsers = async () => {
         const response = await api.get(USER_API_URL);
         return response.data;
     } catch (error) {
-        console.error('Error al obtener usuarios. ¿Token válido?', error.response);
+        if (error.response?.status === 401) {
+            console.warn('⚠️ Token inválido o expirado. Cerrando sesión...');
+            localStorage.removeItem('userToken');
+            window.location.href = '/login';
+        }
+        console.error('Error al obtener usuarios:', error.response || error.message);
         throw error;
     }
 };

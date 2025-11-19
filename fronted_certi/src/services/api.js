@@ -1,31 +1,31 @@
 // src/services/api.js
-
 import axios from 'axios';
 import { API_BASE_URL } from '../config/apiConfig.js';
 
-// 1. Crear una instancia de Axios
 const api = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
 });
 
-// 2. Interceptor de Peticiones: Añade el token JWT
+// Interceptor de petición: agrega token
 api.interceptors.request.use(
     (config) => {
-        // Obtiene el token del almacenamiento local
         const token = localStorage.getItem('userToken');
-
-        // Si existe un token, lo adjunta a la cabecera de Autorización
-        if (token) {
-            // El formato estándar es "Bearer [TOKEN_JWT]"
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        
+        if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
+    (error) => Promise.reject(error)
+);
+
+// Interceptor de respuesta: maneja errores 401
+api.interceptors.response.use(
+    (response) => response,
     (error) => {
+        if (error.response?.status === 401) {
+            console.warn('Token expirado o inválido → redirigiendo al login');
+            localStorage.removeItem('userToken');
+            window.location.href = '/login';
+        }
         return Promise.reject(error);
     }
 );
