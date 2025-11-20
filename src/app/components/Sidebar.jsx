@@ -26,6 +26,7 @@ export default function Sidebar() {
     { key: 'clientes', label: 'Clientes', href: '/dashboard/clientes', icon: 'users' },
     { key: 'productos', label: 'Productos', href: '/dashboard/productos', icon: 'products' },
     { key: 'establecimientos', label: 'Establecimientos', href: '/dashboard/establecimientos', icon: 'FaAngry' },
+    {key: 'usuarios', label: 'Usuarios', href: '/dashboard/usuarios', icon: 'users'},
   ], []);
 
   const initialKey = useMemo(() => {

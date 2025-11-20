@@ -1,0 +1,263 @@
+:root{
+  --azul-encabezado: #4aa3f0;
+  --azul-encabezado-2: #6fb7ff;
+  --fondo: #f6f8fa;
+  --card-bg: #ffffff;
+}
+
+.container{ 
+  padding:24px; 
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; 
+  background:var(--fondo); 
+  min-height:100vh; 
+}
+
+.header{ 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  gap:12px; 
+  margin-bottom:18px; 
+}
+
+.header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title{ 
+  margin:0; 
+  font-size:1.8rem; 
+  color:#0b1220; 
+  font-weight:800; 
+}
+
+.subtitle{
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.refreshBtn{ 
+  background:#3396D3; 
+  color:#fff; 
+  border:none; 
+  padding:10px 16px; 
+  border-radius:999px; 
+  cursor:pointer; 
+  font-weight:700; 
+  display:flex; 
+  gap:8px; 
+  align-items:center;
+  box-shadow:0 8px 20px rgba(51,150,211,0.18); 
+  transition:transform .12s ease, box-shadow .12s ease; 
+}
+
+.refreshBtn:hover{ 
+  transform: translateY(-2px); 
+  box-shadow:0 12px 30px rgba(51,150,211,0.22); 
+}
+
+.refreshBtn:active{ 
+  transform: translateY(0); 
+  box-shadow:0 6px 16px rgba(51,150,211,0.14); 
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: #64748b;
+}
+
+.spinner {
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3396D3;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tableContainer{ 
+  background:var(--card-bg); 
+  border-radius:12px; 
+  padding:14px; 
+  box-shadow: 0 10px 30px rgba(2,6,23,0.04); 
+  overflow:hidden; 
+}
+
+.table{ 
+  width:100%; 
+  border-collapse:collapse; 
+  font-size:0.75rem; 
+}
+
+.table thead tr{ 
+  background:#3396D3; 
+}
+
+.table th{ 
+  text-align:left; 
+  padding:12px 8px; 
+  color:#fff; 
+  font-weight:700; 
+  font-size:0.72rem; 
+}
+
+.table td{ 
+  padding:12px 8px; 
+  border-bottom:1px solid #f3f6f9; 
+  color:#0b1220; 
+  vertical-align:middle; 
+}
+
+.table tbody tr:hover{
+  background-color:#f9fafb;
+}
+
+.badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 0.5rem;
+}
+
+.rolBadge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rolBadge.admin {
+  background: linear-gradient(180deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.12);
+}
+
+.rolBadge.facturacion {
+  background: linear-gradient(180deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  border: 1px solid rgba(59, 130, 246, 0.12);
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.statusBadge.activo {
+  background: linear-gradient(180deg, #ecfdf5, #d1fae5);
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.12);
+}
+
+.statusBadge.inactivo {
+  background: linear-gradient(180deg, #fee2e2, #fecaca);
+  color: #991b1b;
+  border: 1px solid rgba(220, 38, 38, 0.12);
+}
+
+.actionButtons {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.btnEditar,
+.btnEliminar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.06);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  gap: 6px;
+}
+
+.btnEditar:hover,
+.btnEliminar:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.08);
+}
+
+.btnEditar {
+  background: linear-gradient(90deg, #e6f5ff, #d6ebff);
+  color: #0b2a4a;
+}
+
+.btnEliminar {
+  background: linear-gradient(90deg, #fff1f2, #ffdede);
+  color: #b91c1c;
+}
+
+.btnEliminar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.emptyState {
+  padding: 4rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .table {
+    font-size: 0.7rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 6px;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .btnEditar,
+  .btnEliminar {
+    width: 100%;
+    justify-content: center;
+  }
+}

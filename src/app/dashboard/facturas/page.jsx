@@ -219,7 +219,7 @@ export default function Factura() {
       
       y = 105;
       
-      // ===== TABLA DE PRODUCTOS =====
+      
       doc.setTextColor(...grisOscuro);
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');

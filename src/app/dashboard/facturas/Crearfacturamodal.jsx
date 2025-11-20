@@ -77,6 +77,13 @@ function getClienteId(cliente) {
   return cliente.idCliente || cliente.id || null;
 }
 
+// Función auxiliar para obtener el stock de un producto
+function getStockProducto(producto) {
+  if (!producto) return 0;
+  // El API devuelve el campo stockActual
+  return producto.stockActual || producto.stock || producto.cantidadStock || producto.cantidad || 0;
+}
+
 export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
   const [paso, setPaso] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -159,6 +166,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
         setProductos(Array.isArray(data) ? data : data.items || []);
       }
     } catch (error) {
+      console.error('Error al cargar productos:', error);
     }
   }
 
@@ -244,6 +252,19 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
     }));
   };
 
+  // Función para obtener el stock disponible restando lo ya agregado
+  const getStockDisponible = (idProducto) => {
+    const producto = productos.find(p => (p.idProducto || p.id) === Number(idProducto));
+    if (!producto) return 0;
+    
+    const stockTotal = getStockProducto(producto);
+    const cantidadYaAgregada = formData.detalles
+      .filter(det => det.idProducto === Number(idProducto))
+      .reduce((sum, det) => sum + det.cantidad, 0);
+    
+    return stockTotal - cantidadYaAgregada;
+  };
+
   const agregarDetalle = () => {
     if (!detalleTemp.idProducto) {
       toast.error('Seleccione un producto');
@@ -272,6 +293,41 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+   
+    const stockTotal = getStockProducto(producto);
+    
+    // Calcular cantidad ya agregada de este producto en los detalles
+    const cantidadYaAgregada = formData.detalles
+      .filter(det => det.idProducto === Number(detalleTemp.idProducto))
+      .reduce((sum, det) => sum + det.cantidad, 0);
+    
+    const cantidadTotal = cantidadYaAgregada + cantidad;
+    
+    // Validar que haya stock disponible
+    if (stockTotal <= 0) {
+      toast.error(
+        `El producto "${producto.nombreProducto || producto.nombre}" no tiene stock disponible`,
+        { autoClose: 5000 }
+      );
+      return;
+    }
+    
+    // Validar que no se exceda el stock
+    if (cantidadTotal > stockTotal) {
+      const mensaje = cantidadYaAgregada > 0 
+        ? `Stock insuficiente para "${producto.nombreProducto || producto.nombre}". ` +
+          `Disponible: ${stockTotal} unidades. ` +
+          `Ya agregaste: ${cantidadYaAgregada}. ` +
+          `Puedes agregar máximo ${stockTotal - cantidadYaAgregada} más.`
+        : `Stock insuficiente para "${producto.nombreProducto || producto.nombre}". ` +
+          `Disponible: ${stockTotal} unidades. ` +
+          `Intentas agregar: ${cantidad}.`;
+      
+      toast.error(mensaje, { autoClose: 6000 });
+      return;
+    }
+    
+
     const nuevoDetalle = {
       idProducto: Number(detalleTemp.idProducto),
       codigoProducto: producto.codigoProducto || '',
@@ -279,7 +335,8 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       cantidad: cantidad,
       precioUnitario: Number(producto.precioUnitario || producto.precio || 0),
       descuento: descuento,
-      aplicaIva: producto.aplicaIva !== undefined ? producto.aplicaIva : true
+      aplicaIva: producto.aplicaIva !== undefined ? producto.aplicaIva : true,
+      stockDisponible: stockTotal // Guardamos el stock para referencia
     };
 
     nuevoDetalle.subtotal = nuevoDetalle.cantidad * nuevoDetalle.precioUnitario;
@@ -299,7 +356,9 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       descuento: 0
     });
 
-    toast.success('Producto agregado');
+    toast.success(`Producto agregado (${cantidadTotal} de ${stockTotal} unidades)`, {
+      autoClose: 3000
+    });
   };
 
   const eliminarDetalle = (index) => {
@@ -373,6 +432,26 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
     if (formData.detalles.length === 0) {
       toast.error('Agregue al menos un producto');
       return;
+    }
+
+    // Validación final de stock antes de enviar
+    for (const detalle of formData.detalles) {
+      const producto = productos.find(p => (p.idProducto || p.id) === detalle.idProducto);
+      if (producto) {
+        const stockActual = getStockProducto(producto);
+        const cantidadDelProducto = formData.detalles
+          .filter(d => d.idProducto === detalle.idProducto)
+          .reduce((sum, d) => sum + d.cantidad, 0);
+        
+        if (cantidadDelProducto > stockActual) {
+          toast.error(
+            `Stock insuficiente para "${detalle.nombreProducto}". ` +
+            `Tienes ${cantidadDelProducto} en la factura pero solo hay ${stockActual} disponibles.`,
+            { autoClose: 6000 }
+          );
+          return;
+        }
+      }
     }
 
     isSubmittingRef.current = true;
@@ -528,6 +607,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       if (!err.message.includes('Sesión expirada') && !err.message.includes('Número de factura duplicado')) {
         toast.error('Error al crear la factura. Revisa la consola para más detalles.');
       }
+      console.error('Error al crear factura:', err);
     } finally {
       setTimeout(() => {
         isSubmittingRef.current = false;
@@ -539,6 +619,14 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   const totales = calcularTotales();
+
+  // Obtener info del producto seleccionado para mostrar stock
+  const productoSeleccionado = detalleTemp.idProducto 
+    ? productos.find(p => (p.idProducto || p.id) === Number(detalleTemp.idProducto))
+    : null;
+  const stockDisponibleSeleccionado = productoSeleccionado 
+    ? getStockDisponible(Number(detalleTemp.idProducto))
+    : 0;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -669,6 +757,51 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
                 <h3 className={styles.sectionTitle}>Agregar Productos</h3>
                 
                 <div className={styles.productoForm}>
+                  {/* Label de Stock Disponible */}
+                  {productoSeleccionado && (
+                    <div style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: stockDisponibleSeleccionado > 0 ? '#ecfdf5' : '#fef2f2',
+                      border: `2px solid ${stockDisponibleSeleccionado > 0 ? '#10b981' : '#ef4444'}`,
+                      marginBottom: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}>
+                      <span style={{ 
+                        fontSize: '24px',
+                        color: stockDisponibleSeleccionado > 0 ? '#10b981' : '#ef4444'
+                      }}>
+                        {stockDisponibleSeleccionado > 0 ? '✓' : '⚠'}
+                      </span>
+                      <div>
+                        <div style={{ 
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: stockDisponibleSeleccionado > 0 ? '#047857' : '#dc2626',
+                          marginBottom: '2px'
+                        }}>
+                          Stock Disponible
+                        </div>
+                        <div style={{ 
+                          fontSize: '20px',
+                          fontWeight: '700',
+                          color: stockDisponibleSeleccionado > 0 ? '#047857' : '#dc2626'
+                        }}>
+                          {stockDisponibleSeleccionado} {productoSeleccionado.unidadMedida || 'unidades'}
+                        </div>
+                        <div style={{ 
+                          fontSize: '12px',
+                          color: '#6b7280',
+                          marginTop: '2px'
+                        }}>
+                          {productoSeleccionado.nombreProducto || productoSeleccionado.nombre}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className={styles.formGrid}>
                     <div className={styles.fieldGroup}>
                       <label>Producto *</label>
@@ -683,11 +816,21 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
                         disabled={loading}
                       >
                         <option value="">Seleccione un producto</option>
-                        {productos.map(prod => (
-                          <option key={prod.idProducto || prod.id} value={prod.idProducto || prod.id}>
-                            {prod.codigoProducto} - {prod.nombreProducto || prod.nombre} - Q{(prod.precioUnitario || prod.precio || 0).toFixed(2)}
-                          </option>
-                        ))}
+                        {productos.map(prod => {
+                          const stock = getStockProducto(prod);
+                          const disponible = getStockDisponible(prod.idProducto || prod.id);
+                          const unidad = prod.unidadMedida || 'UND';
+                          return (
+                            <option 
+                              key={prod.idProducto || prod.id} 
+                              value={prod.idProducto || prod.id}
+                              disabled={disponible <= 0}
+                            >
+                              {prod.codigoProducto} - {prod.nombreProducto || prod.nombre} - Q{(prod.precioUnitario || prod.precio || 0).toFixed(2)} 
+                              {disponible > 0 ? ` (Stock: ${disponible} ${unidad})` : ' (Sin stock)'}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
 
@@ -696,10 +839,16 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
                       <input
                         type="number"
                         min="1"
+                        max={stockDisponibleSeleccionado || 999999}
                         value={detalleTemp.cantidad}
                         onChange={(e) => setDetalleTemp({...detalleTemp, cantidad: e.target.value})}
-                        disabled={loading}
+                        disabled={loading || !detalleTemp.idProducto}
                       />
+                      {productoSeleccionado && stockDisponibleSeleccionado > 0 && (
+                        <small style={{ color: '#6b7280', display: 'block', marginTop: '4px' }}>
+                          Máximo: {stockDisponibleSeleccionado}
+                        </small>
+                      )}
                     </div>
 
                     <div className={styles.fieldGroup}>
@@ -720,7 +869,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
                     type="button"
                     className={styles.addBtn}
                     onClick={agregarDetalle}
-                    disabled={loading}
+                    disabled={loading || !detalleTemp.idProducto || stockDisponibleSeleccionado <= 0}
                   >
                     + Agregar Producto
                   </button>
@@ -746,7 +895,13 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
                         {formData.detalles.map((det, index) => (
                           <tr key={index}>
                             <td>{det.codigoProducto}</td>
-                            <td>{det.nombreProducto}</td>
+                            <td>
+                              {det.nombreProducto}
+                              <br />
+                              <small style={{ color: '#6b7280' }}>
+                                Stock: {det.stockDisponible}
+                              </small>
+                            </td>
                             <td>{det.cantidad}</td>
                             <td>Q{det.precioUnitario.toFixed(2)}</td>
                             <td>{det.descuento}%</td>
