@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo, useState, useEffect, use } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from '../dashboard/dashboard.module.css';
 
@@ -40,8 +40,14 @@ export default function Sidebar() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('nombre');
+      localStorage.removeItem('email');
+      localStorage.removeItem('rol');
+      sessionStorage.clear();
+    }
     router.push('/login');
   };
 
@@ -108,23 +114,22 @@ export default function Sidebar() {
         <div className={styles.brand}>Facturas Guate</div>
 
         <div className={styles.profile}>
-          <div className={styles.avatar}><svg xmlns="http://www.w3.org/2000/svg" 
-          width="24" 
-          height="24" 
-          viewBox="0 0 24 24" 
-          fill="currentColor" >
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M12 2a5 5 0 1 1 -5 5l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
-            <path d="M14 14a5 5 0 0 1 5 5v1a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-1a5 5 0 0 1 5 -5h4z" />
+          <div className={styles.avatar}>
+            <svg xmlns="http://www.w3.org/2000/svg" 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="currentColor" >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M12 2a5 5 0 1 1 -5 5l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+              <path d="M14 14a5 5 0 0 1 5 5v1a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-1a5 5 0 0 1 5 -5h4z" />
             </svg>
-            </div>
+          </div>
           
-          
-
           <div className={styles.profileInfo}>
-            <div style={{fontWeight:700}}>{localStorage.getItem('nombre')}</div>
-            <div style={{fontSize:'.85rem', color:'var(--muted)'}}>{localStorage.getItem('email')}</div>
-            <div style={{fontSize:'.75rem', color:'var(--muted)'}}>{localStorage.getItem('rol')}</div>
+            <div style={{fontWeight:700}}>{nombre || 'Usuario'}</div>
+            <div style={{fontSize:'.85rem', color:'var(--muted)'}}>{email || 'email@ejemplo.com'}</div>
+            <div style={{fontSize:'.75rem', color:'var(--muted)'}}>{rol || 'Sin rol'}</div>
           </div>
         </div>
 
@@ -149,45 +154,46 @@ export default function Sidebar() {
           <div className={styles.footerContainer}>
             <button type="button" className={styles.footerItem} onClick={() => setShowLogoutConfirm(true)}>
               <svg xmlns="http://www.w3.org/2000/svg" 
-            className={styles.icon}
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" strokeLinecap="round" 
-            strokeLinejoin="round" 
-            >
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
-              <path d="M9 12h12l-3 -3" />
-              <path d="M18 15l3 -3" />
+                className={styles.icon}
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" strokeLinecap="round" 
+                strokeLinejoin="round" 
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+                <path d="M9 12h12l-3 -3" />
+                <path d="M18 15l3 -3" />
               </svg>
               Cerrar sesión
             </button>
-           
           </div>
 
           <div className={styles.footerContainer}>
             <button type="button" className={styles.footerItem} >
-            <svg xmlns="http://www.w3.org/2000/svg" 
-            className={styles.icon}
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="1.75" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            >
-              <path stroke="none" 
-              d="M0 0h24v24H0z" 
-              fill="none"/>
-              <path d="M19.875 6.27a2.225 2.225 0 0 1 1.125 1.948v7.284c0 .809 -.443 1.555 -1.158 1.948l-6.75 4.27a2.269 2.269 0 0 1 -2.184 0l-6.75 -4.27a2.225 2.225 0 0 1 -1.158 -1.948v-7.285c0 -.809 .443 -1.554 1.158 -1.947l6.75 -3.98a2.33 2.33 0 0 1 2.25 0l6.75 3.98h-.033z" /><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /></svg>
-              Configuración </button>
-            </div>
-           
+              <svg xmlns="http://www.w3.org/2000/svg" 
+                className={styles.icon}
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="1.75" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+              >
+                <path stroke="none" 
+                  d="M0 0h24v24H0z" 
+                  fill="none"/>
+                <path d="M19.875 6.27a2.225 2.225 0 0 1 1.125 1.948v7.284c0 .809 -.443 1.555 -1.158 1.948l-6.75 4.27a2.269 2.269 0 0 1 -2.184 0l-6.75 -4.27a2.225 2.225 0 0 1 -1.158 -1.948v-7.285c0 -.809 .443 -1.554 1.158 -1.947l6.75 -3.98a2.33 2.33 0 0 1 2.25 0l6.75 3.98h-.033z" />
+                <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+              </svg>
+              Configuración 
+            </button>
+          </div>
         </div>
       </aside>
 

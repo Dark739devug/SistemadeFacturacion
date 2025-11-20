@@ -6,6 +6,7 @@ import styles from './facturacion.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ClienteModal from './ClienteModal';
+import DireccionModal from './DireccionModal';
 import Toggle from '@/app/components/Toggle';
 
 const API_BASE = process.env.API_BASE_URL || 'http://localhost:9090';
@@ -35,7 +36,6 @@ function limpiarToken(tokenSucio) {
   return token;
 }
 
-// Obtener datos del usuario del localStorage
 function obtenerDatosUsuario() {
   try {
     const nombre = localStorage.getItem('nombre');
@@ -48,7 +48,6 @@ function obtenerDatosUsuario() {
       return null;
     }
     
-    // Crear objeto con los datos
     const datosUsuario = {
       nombre: nombre || '',
       email: email || '',
@@ -63,11 +62,9 @@ function obtenerDatosUsuario() {
   }
 }
 
-// Obtener el rol del usuario
 function obtenerRolUsuario() {
   const datos = obtenerDatosUsuario();
   if (!datos) {
-
     return null;
   }
   
@@ -85,7 +82,6 @@ const PERMISOS_POR_ROL = {
     
   },
   
-  // Administrador
   'admin': {
     puedeVer: true,
     puedeCrear: true,
@@ -95,7 +91,6 @@ const PERMISOS_POR_ROL = {
   },
 };
 
-// Calcular permisos del usuario
 function calcularPermisos() {
   
   const rolUsuario = obtenerRolUsuario();
@@ -109,10 +104,8 @@ function calcularPermisos() {
   };
   
   if (rolUsuario) {
-    // Primero buscar con el rol exacto
     let permisosRol = PERMISOS_POR_ROL[rolUsuario];
     
-    // Si no encuentra, buscar en minúsculas
     if (!permisosRol) {
       const rolMinusculas = String(rolUsuario).toLowerCase().trim();
       permisosRol = PERMISOS_POR_ROL[rolMinusculas];
@@ -120,10 +113,7 @@ function calcularPermisos() {
     
     if (permisosRol) {
       permisos = { ...permisos, ...permisosRol };
-    } else {
     }
-  } else {
-    console.error(' No se pudo obtener el rol');
   }
   
   return permisos;
@@ -133,7 +123,6 @@ function calcularPermisos() {
 export default function Clientes() {
   const router = useRouter();
   
-  // Estados
   const [clientes, setClientes] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [textoBusqueda, setTextoBusqueda] = useState('');
@@ -141,11 +130,13 @@ export default function Clientes() {
   const clientesPorPagina = 5;
   const [mensajeError, setMensajeError] = useState(null);
   
-  // NUEVO: Estado para filtro
   const [filtroEstado, setFiltroEstado] = useState('Todos');
   
   const [modalAbierto, setModalAbierto] = useState(false);
   const [clienteParaEditar, setClienteParaEditar] = useState(null);
+  
+  const [modalDireccionAbierto, setModalDireccionAbierto] = useState(false);
+  const [clienteParaDireccion, setClienteParaDireccion] = useState(null);
   
   const [permisosUsuario, setPermisosUsuario] = useState({
     puedeVer: false,
@@ -157,7 +148,6 @@ export default function Clientes() {
 
 
   useEffect(() => {
-    
     const permisos = calcularPermisos();
     setPermisosUsuario(permisos);
     
@@ -165,15 +155,13 @@ export default function Clientes() {
    
     
     if (permisos.puedeVer) {
-      cargarClientes(filtroEstado); // CAMBIO: Pasar filtroEstado
+      cargarClientes(filtroEstado);
     } else {
-
       setMensajeError('No tiene permisos para ver clientes.');
       toast.error('No tiene permisos para acceder a esta sección.');
     }
   }, []);
 
-  // NUEVO: useEffect para cambios de filtro
   useEffect(() => {
     if (permisosUsuario.puedeVer) {
       cargarClientes(filtroEstado);
@@ -182,7 +170,6 @@ export default function Clientes() {
   }, [filtroEstado]);
 
 
-  // MODIFICADO: Función con parámetro estadoFiltro
   async function cargarClientes(estadoFiltro = 'Todos') {
     setCargando(true);
     setMensajeError(null);
@@ -196,13 +183,11 @@ export default function Clientes() {
       if (token) cabeceras.Authorization = `Bearer ${token}`;
 
       if (!token) {
-        console.error(' No hay token de autenticación');
         toast.error('No autorizado. Por favor inicie sesión.');
         router.push('/login');
         return;
       }
 
-      // NUEVO: Construir URL según el filtro
       let url = `${API_BASE}/api/clientes`;
       if (estadoFiltro === 'Activados') {
         url = `${API_BASE}/api/clientes/activos`;
@@ -221,10 +206,7 @@ export default function Clientes() {
       }
 
       const datos = await respuesta.json();
-      
       const listaClientes = Array.isArray(datos) ? datos : (datos.items || []);
-     
-      
       setClientes(listaClientes);
     } catch (error) {
       toast.error('Error cargando clientes.');
@@ -291,14 +273,12 @@ export default function Clientes() {
 
       toast.success(`Cliente ${nuevoEstado ? 'activado' : 'desactivado'} exitosamente`);
       
-      
       setClientes(clientesAnteriores => 
         clientesAnteriores.map(c => 
           c.idCliente === id ? { ...c, activo: nuevoEstado } : c
         )
       );
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
       toast.error('No se pudo cambiar el estado del cliente.');
     }
   }
@@ -327,8 +307,6 @@ export default function Clientes() {
         router.push('/login');
         return;
       }
-      
-
 
       const respuesta = await fetch(`${API_BASE}/api/clientes/${id}`, { 
         method: 'DELETE', 
@@ -359,7 +337,6 @@ export default function Clientes() {
     setModalAbierto(true);
   };
 
-  // Modal editar
   const abrirModalEditar = (cliente) => {
     if (!permisosUsuario.puedeEditar) {
       toast.error('No tiene permisos para editar clientes.');
@@ -369,21 +346,27 @@ export default function Clientes() {
     setModalAbierto(true);
   };
 
-  // Modal cerrar
   const cerrarModal = () => {
     setModalAbierto(false);
     setClienteParaEditar(null);
   };
 
-  // Actualizacion de modal
+  const abrirModalDireccion = (cliente) => {
+    setClienteParaDireccion(cliente);
+    setModalDireccionAbierto(true);
+  };
+
+  const cerrarModalDireccion = () => {
+    setModalDireccionAbierto(false);
+    setClienteParaDireccion(null);
+  };
+
   const alGuardarEnModal = (clienteGuardado) => {
     if (clienteParaEditar) {
-     
       setClientes(clientesAnteriores => 
         clientesAnteriores.map(c => c.idCliente === clienteGuardado.idCliente ? clienteGuardado : c)
       );
     } else {
-      
       setClientes(clientesAnteriores => [clienteGuardado, ...clientesAnteriores]);
     }
   };
@@ -434,7 +417,6 @@ export default function Clientes() {
         />  
         </div>
        
-        {/* MODIFICADO: Select conectado al estado */}
         <select 
           className={styles.select}
           value={filtroEstado}
@@ -459,20 +441,18 @@ export default function Clientes() {
                 <tr>
                   <th>NIT</th>
                   <th>Razón Social</th>
-                  <th>Direccion</th>
-                  <th>Municipio</th>
-                  <th>Departamento</th>
+                  <th>Ubicación</th>
                   <th>Teléfono</th>
                   <th>Email</th>
                   <th>Estado</th>
                   
-                  {(permisosUsuario.puedeEditar || permisosUsuario.puedeEliminar || permisosUsuario.puedeEditar)  && <th>Acciones</th>}
+                  {(permisosUsuario.puedeEditar || permisosUsuario.puedeEliminar || permisosUsuario.puedeDesactivar)  && <th>Acciones</th>}
                 </tr>
               </thead>
               <tbody>
                 {clientesPaginaActual.length === 0 ? (
                   <tr>
-                    <td colSpan={(permisosUsuario.puedeEditar || permisosUsuario.puedeEliminar) ? "8" : "7"} className={styles.empty}>
+                    <td colSpan={(permisosUsuario.puedeEditar || permisosUsuario.puedeEliminar) ? "7" : "6"} className={styles.empty}>
                       No hay resultados
                     </td>
                   </tr>
@@ -481,16 +461,21 @@ export default function Clientes() {
                     <tr key={cliente.idCliente}>
                       <td><strong>{cliente.nit}</strong></td>
                       <td>{cliente.razonSocial}</td>
-                      <td>{cliente.direccion || '-'}</td>
-                      <td>{cliente.municipio || '-'}</td>
-                      <td>{cliente.departamento || '-'}</td>
+                      <td>
+                        <button 
+                          className={styles.verDetalleBtn}
+                          onClick={() => abrirModalDireccion(cliente)}
+                          title="Ver dirección completa"
+                        >
+                          Ver detalles
+                        </button>
+                      </td>
                       <td>{cliente.telefono || '-'}</td>
                       <td>{cliente.email || '-'}</td>
                       <td>
                         <span className={cliente.activo ? styles.statusActive : styles.statusInactive}>
                           {cliente.activo ? 'Activo' : 'Inactivo'}
                         </span>
-                        
                       </td>
                      
                       {(permisosUsuario.puedeEditar || permisosUsuario.puedeEliminar) && (
@@ -501,16 +486,10 @@ export default function Clientes() {
                               onClick={() => abrirModalEditar(cliente)}
                               title="Editar cliente"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" 
-                              height="24" viewBox="0 0 24 24" 
-                              fill="none" stroke="currentColor" 
-                              strokeWidth="2" strokeLinecap="round" 
-                              strokeLinejoin="round" >
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
-                                <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
-                                <path d="M16 5l3 3" />
-                              </svg>
+                              <svg width={18} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#0b2a4a" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                            <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          </svg>
                             </button>
                           )}
                           
@@ -549,7 +528,6 @@ export default function Clientes() {
             </div>
             
             <div className={styles.pageControls}>
-            
               <button 
                 className={styles.navBtn} 
                 onClick={() => setPaginaActual(1)} 
@@ -558,7 +536,6 @@ export default function Clientes() {
               >
                 «
               </button>
-              
               
               <button 
                 className={styles.navBtn} 
@@ -569,7 +546,6 @@ export default function Clientes() {
                 ‹
               </button>
               
-              
               {(() => {
                 const pages = [];
                 const start = Math.max(1, paginaActual - 2);
@@ -579,14 +555,12 @@ export default function Clientes() {
                   pages.push(p);
                 }
                 
-                
                 if (start > 1) {
                   pages.unshift(1);
                   if (start > 2) {
                     pages.splice(1, 0, 'dots-start');
                   }
                 }
-                
                 
                 if (end < totalPaginas) {
                   if (end < totalPaginas - 1) {
@@ -621,7 +595,6 @@ export default function Clientes() {
                 });
               })()}
               
-
               <button 
                 className={styles.navBtn} 
                 onClick={() => setPaginaActual(anterior => Math.min(totalPaginas, anterior + 1))} 
@@ -630,7 +603,6 @@ export default function Clientes() {
               >
                 ›
               </button>
-              
               
               <button 
                 className={styles.navBtn} 
@@ -642,8 +614,6 @@ export default function Clientes() {
               </button>
             </div>
           </div>
-
-
           </>
         )}
       </div>
@@ -655,6 +625,12 @@ export default function Clientes() {
         onSuccess={alGuardarEnModal}
         canCreate={permisosUsuario.puedeCrear}
         canEdit={permisosUsuario.puedeEditar}
+      />
+
+      <DireccionModal
+        isOpen={modalDireccionAbierto}
+        onClose={cerrarModalDireccion}
+        cliente={clienteParaDireccion}
       />
 
       <ToastContainer position="bottom-right" />
