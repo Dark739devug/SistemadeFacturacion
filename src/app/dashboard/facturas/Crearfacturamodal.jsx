@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import styles from './crear-factura-modal.module.css';
 
@@ -25,21 +25,34 @@ function normalizeToken(raw) {
 function getUserIdFromStorage() {
   try {
     const stored = localStorage.getItem('accessToken') || localStorage.getItem('token');
-    if (stored) {
+    if (!stored) return null;
+
+    try {
       const parsed = JSON.parse(stored);
       if (parsed.idUsuario) {
-        console.log('✅ ID Usuario encontrado directamente en localStorage:', parsed.idUsuario);
         return parsed.idUsuario;
       }
+    } catch (jsonError) {
     }
+
+    return null;
   } catch (e) {
+    return null;
   }
-  return null;
 }
 
 function decodeJWT(token) {
   try {
-    const base64Url = token.split('.')[1];
+    if (!token || typeof token !== 'string') {
+      return null;
+    }
+
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const base64Url = parts[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
@@ -47,16 +60,29 @@ function decodeJWT(token) {
         .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
-    return JSON.parse(jsonPayload);
+    const decoded = JSON.parse(jsonPayload);
+    return decoded;
   } catch (error) {
-    console.error('Error decodificando JWT:', error);
     return null;
   }
+}
+
+function getEstablecimientoId(establecimiento) {
+  if (!establecimiento) return null;
+  return establecimiento.idEstablecimiento || establecimiento.id || null;
+}
+
+function getClienteId(cliente) {
+  if (!cliente) return null;
+  return cliente.idCliente || cliente.id || null;
 }
 
 export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
   const [paso, setPaso] = useState(1);
   const [loading, setLoading] = useState(false);
+  
+  const isSubmittingRef = useRef(false);
+  const submitTimeoutRef = useRef(null);
   
   const tiposDocumento = [
     { id: 1, codigo: 'FACT', nombre: 'Factura' },
@@ -91,7 +117,14 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       cargarDatos();
       setPaso(1);
       resetForm();
+      isSubmittingRef.current = false;
     }
+    
+    return () => {
+      if (submitTimeoutRef.current) {
+        clearTimeout(submitTimeoutRef.current);
+      }
+    };
   }, [isOpen]);
 
   const resetForm = () => {
@@ -109,6 +142,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
     setEstablecimientoEncontrado(null);
     setNitCliente('');
     setClienteEncontrado(null);
+    isSubmittingRef.current = false;
   };
 
   async function cargarDatos() {
@@ -125,7 +159,6 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
         setProductos(Array.isArray(data) ? data : data.items || []);
       }
     } catch (error) {
-      console.error('Error cargando datos:', error);
     }
   }
 
@@ -143,7 +176,6 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       if (token) headers.Authorization = `Bearer ${token}`;
 
       const url = `${API_BASE}/api/establecimientos/nit/${encodeURIComponent(nitEstablecimiento.trim())}`;
-      console.log('Buscando establecimiento en:', url);
       
       const res = await fetch(url, { headers });
 
@@ -153,8 +185,6 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
           setEstablecimientoEncontrado(null);
           return;
         }
-        const errorText = await res.text();
-        console.error('Error del servidor:', errorText);
         throw new Error(`HTTP ${res.status}`);
       }
 
@@ -162,7 +192,6 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       setEstablecimientoEncontrado(establecimiento);
       toast.success('Establecimiento encontrado');
     } catch (error) {
-      console.error('Error buscando establecimiento:', error);
       toast.error('Error al buscar establecimiento');
       setEstablecimientoEncontrado(null);
     } finally {
@@ -184,7 +213,6 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       if (token) headers.Authorization = `Bearer ${token}`;
 
       const url = `${API_BASE}/api/clientes/nit/${encodeURIComponent(nitCliente.trim())}`;
-      console.log('Buscando cliente en:', url);
 
       const res = await fetch(url, { headers });
 
@@ -194,8 +222,6 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
           setClienteEncontrado(null);
           return;
         }
-        const errorText = await res.text();
-        console.error('Error del servidor:', errorText);
         throw new Error(`HTTP ${res.status}`);
       }
 
@@ -203,7 +229,6 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       setClienteEncontrado(cliente);
       toast.success('Cliente encontrado');
     } catch (error) {
-      console.error('Error buscando cliente:', error);
       toast.error('Error al buscar cliente');
       setClienteEncontrado(null);
     } finally {
@@ -224,13 +249,22 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       toast.error('Seleccione un producto');
       return;
     }
-    if (detalleTemp.cantidad <= 0) {
+    
+    const cantidad = Number(detalleTemp.cantidad);
+    const descuento = Number(detalleTemp.descuento) || 0;
+    
+    if (cantidad <= 0 || isNaN(cantidad)) {
       toast.error('La cantidad debe ser mayor a 0');
       return;
     }
 
+    if (descuento < 0 || descuento > 100 || isNaN(descuento)) {
+      toast.error('El descuento debe estar entre 0 y 100');
+      return;
+    }
+
     const producto = productos.find(p => 
-      (p.idProducto || p.id) === parseInt(detalleTemp.idProducto)
+      (p.idProducto || p.id) === Number(detalleTemp.idProducto)
     );
     
     if (!producto) {
@@ -239,12 +273,12 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
     }
 
     const nuevoDetalle = {
-      idProducto: parseInt(detalleTemp.idProducto),
+      idProducto: Number(detalleTemp.idProducto),
       codigoProducto: producto.codigoProducto || '',
       nombreProducto: producto.nombreProducto || producto.nombre || '',
-      cantidad: parseInt(detalleTemp.cantidad),
-      precioUnitario: parseFloat(producto.precioUnitario || producto.precio || 0),
-      descuento: parseFloat(detalleTemp.descuento) || 0,
+      cantidad: cantidad,
+      precioUnitario: Number(producto.precioUnitario || producto.precio || 0),
+      descuento: descuento,
       aplicaIva: producto.aplicaIva !== undefined ? producto.aplicaIva : true
     };
 
@@ -286,8 +320,40 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
     return { subtotal, totalDescuentos, subtotalConDescuento, totalIva, totalFactura };
   };
 
+  const validarPaso = (pasoActual) => {
+    if (pasoActual === 1) {
+      if (!formData.idTipoDocumento) {
+        toast.error('Debe seleccionar un tipo de documento');
+        return false;
+      }
+      if (!establecimientoEncontrado) {
+        toast.error('Debe buscar y seleccionar un establecimiento');
+        return false;
+      }
+      if (!clienteEncontrado) {
+        toast.error('Debe buscar y seleccionar un cliente');
+        return false;
+      }
+      return true;
+    }
+
+    if (pasoActual === 2) {
+      if (formData.detalles.length === 0) {
+        toast.error('Agregue al menos un producto');
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isSubmittingRef.current) {
+      return;
+    }
 
     if (!establecimientoEncontrado) {
       toast.error('Debe buscar y seleccionar un establecimiento');
@@ -309,26 +375,24 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    isSubmittingRef.current = true;
     setLoading(true);
 
     try {
       const tokenGuardado = localStorage.getItem('accessToken') || localStorage.getItem('token');
       const token = normalizeToken(tokenGuardado);
       
-      console.log('🔑 Token guardado:', tokenGuardado ? 'Existe' : 'No existe');
-      console.log('🔑 Token normalizado:', token ? `${token.substring(0, 30)}...` : 'No existe');
-      
       if (!token) {
         toast.error('No se encontró token de autenticación. Inicia sesión nuevamente.');
+        isSubmittingRef.current = false;
         setLoading(false);
         return;
       }
-      
+
       let idUsuario = getUserIdFromStorage();
       
       if (!idUsuario) {
         const decodedToken = decodeJWT(token);
-        console.log('👤 Token JWT decodificado:', decodedToken);
         
         if (decodedToken) {
           idUsuario = decodedToken.idUsuario || 
@@ -336,48 +400,67 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
                       decodedToken.user_id || 
                       decodedToken.id ||
                       decodedToken.sub;
-          
-          if (typeof idUsuario === 'string' && idUsuario.includes('@')) {
-            idUsuario = decodedToken.idUsuario || decodedToken.userId || decodedToken.user_id || decodedToken.id;
-          }
-          
-          console.log('👤 ID Usuario extraído del JWT:', idUsuario);
         }
       }
       
       if (!idUsuario) {
         toast.error('No se pudo obtener el ID del usuario. Contacta al administrador.');
-        console.error('❌ No se encontró idUsuario en localStorage ni en el token JWT');
+        isSubmittingRef.current = false;
         setLoading(false);
         return;
       }
-      
-      console.log('✅ ID Usuario final a usar:', idUsuario);
-      
+
+      const idEstablecimiento = getEstablecimientoId(establecimientoEncontrado);
+      const idCliente = getClienteId(clienteEncontrado);
+      const idTipoDocumento = parseInt(formData.idTipoDocumento, 10);
+      const idUsuarioCreacion = parseInt(idUsuario, 10);
+
+      if (!idEstablecimiento || isNaN(idEstablecimiento) || idEstablecimiento <= 0) {
+        toast.error('ID de establecimiento inválido');
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+
+      if (!idCliente || isNaN(idCliente) || idCliente <= 0) {
+        toast.error('ID de cliente inválido');
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+
+      if (isNaN(idTipoDocumento) || idTipoDocumento <= 0) {
+        toast.error('ID de tipo documento inválido');
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+
+      if (isNaN(idUsuarioCreacion) || idUsuarioCreacion <= 0) {
+        toast.error('ID de usuario inválido');
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        idEstablecimiento: idEstablecimiento,
+        idCliente: idCliente,
+        idTipoDocumento: idTipoDocumento,
+        idUsuarioCreacion: idUsuarioCreacion,
+        observaciones: String(formData.observaciones || ""),
+        detalles: formData.detalles.map(det => ({
+          idProducto: parseInt(det.idProducto, 10),
+          cantidad: parseInt(det.cantidad, 10),
+          descuento: parseFloat(det.descuento) || 0
+        }))
+      };
+
       const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`
       };
-
-      const payload = {
-        idEstablecimiento: establecimientoEncontrado.idEstablecimiento || establecimientoEncontrado.id,
-        idCliente: clienteEncontrado.idCliente || clienteEncontrado.id,
-        idTipoDocumento: parseInt(formData.idTipoDocumento),
-        idUsuarioCreacion: parseInt(idUsuario),
-        observaciones: formData.observaciones || "",
-        detalles: formData.detalles.map(det => ({
-          idProducto: det.idProducto,
-          cantidad: det.cantidad,
-          descuento: det.descuento
-        }))
-      };
-
-      console.log('Enviando payload:', JSON.stringify(payload, null, 2));
-      console.log('Headers:', {
-        'Content-Type': headers['Content-Type'],
-        'Authorization': headers.Authorization ? `Bearer ${headers.Authorization.substring(7, 27)}...` : 'No hay token'
-      });
 
       const res = await fetch(`${API_BASE}/api/facturas`, {
         method: 'POST',
@@ -385,14 +468,33 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
         body: JSON.stringify(payload)
       });
 
-      console.log('📡 Respuesta del servidor:', res.status);
-
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error('❌ Error del servidor:', errorText);
+        let errorMessage = 'Error desconocido';
+        
+        try {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await res.json();
+            errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+          } else {
+            errorMessage = await res.text();
+          }
+        } catch (parseError) {
+          errorMessage = `HTTP ${res.status} - ${res.statusText}`;
+        }
+        
+        if (errorMessage.includes('llave duplicada') || 
+            errorMessage.includes('duplicate key') || 
+            errorMessage.includes('numero_factura') ||
+            errorMessage.includes('23505')) {
+          toast.error('El número de factura ya existe. Este es un problema del backend. Contacta al administrador del sistema.', {
+            autoClose: 7000
+          });
+          throw new Error('Número de factura duplicado - Error del backend');
+        }
         
         if (res.status === 401) {
-          toast.error('Tu sesión ha expirado. Por favor, cierra sesión e inicia sesión nuevamente.', {
+          toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.', {
             autoClose: 5000
           });
           localStorage.removeItem('accessToken');
@@ -405,25 +507,32 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
           throw new Error('Sesión expirada');
         }
         
-        throw new Error(errorText || `HTTP ${res.status}`);
+        toast.error(`Error al crear la factura: ${errorMessage.substring(0, 150)}`);
+        throw new Error(errorMessage);
       }
 
       const savedFactura = await res.json();
-      console.log('✅ Factura creada exitosamente:', savedFactura);
       toast.success('Factura creada exitosamente');
+      
+      resetForm();
+      setPaso(1);
       
       onClose();
       
       if (onSuccess) {
-        setTimeout(() => {
+        submitTimeoutRef.current = setTimeout(() => {
           onSuccess(savedFactura);
         }, 100);
       }
     } catch (err) {
-      console.error('Error creando factura:', err);
-      toast.error('Error al crear la factura');
+      if (!err.message.includes('Sesión expirada') && !err.message.includes('Número de factura duplicado')) {
+        toast.error('Error al crear la factura. Revisa la consola para más detalles.');
+      }
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+        setLoading(false);
+      }, 2000);
     }
   };
 
@@ -746,15 +855,9 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
                 type="button"
                 className={styles.nextBtn}
                 onClick={() => {
-                  if (paso === 1 && (!establecimientoEncontrado || !clienteEncontrado)) {
-                    toast.error('Debe buscar y seleccionar establecimiento y cliente');
-                    return;
+                  if (validarPaso(paso)) {
+                    setPaso(paso + 1);
                   }
-                  if (paso === 2 && formData.detalles.length === 0) {
-                    toast.error('Agregue al menos un producto');
-                    return;
-                  }
-                  setPaso(paso + 1);
                 }}
                 disabled={loading}
               >
