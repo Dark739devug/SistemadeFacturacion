@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import styles from './facturacion.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Componentes del Modal (Asegúrate de que las rutas relativas sean correctas)
 import CrearFacturaModal from './Crearfacturamodal';
 import PDFPreviewModal from './PDFPreviewModal';
+import ENDPOINTS from '../../lib/api'; // <--- RUTA CENTRALIZADA
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9090';
+// --- Funciones auxiliares (necesarias para el funcionamiento) ---
 
 function limpiarToken(tokenSucio) {
   if (!tokenSucio) return null;
@@ -25,6 +28,8 @@ function limpiarToken(tokenSucio) {
   } catch {}
   return token;
 }
+
+// --- Componente Principal ---
 
 export default function Factura() {
   const router = useRouter();
@@ -61,7 +66,8 @@ export default function Factura() {
         return;
       }
 
-      const respuesta = await fetch(`${API_BASE}/api/facturas`, { headers: cabeceras });
+      // 🟢 USO DE ENDPOINTS: Cargar todas las facturas
+      const respuesta = await fetch(ENDPOINTS.facturas, { headers: cabeceras });
 
       if (!respuesta.ok) {
         if (respuesta.status === 401 || respuesta.status === 403) {
@@ -83,7 +89,8 @@ export default function Factura() {
     }
   }
 
-  // ===== FUNCIÓN PARA GENERAR PDF CON IMPORTACIÓN DINÁMICA CORREGIDA =====
+  // ===== FUNCIÓN PARA GENERAR PDF CON LIBRERÍAS EXTERNAS =====
+  // Nota: Estas librerías (jspdf, autotable) deben estar instaladas en tu proyecto (npm install jspdf jspdf-autotable)
   const generarFacturaPDF = async (factura, descargar = true) => {
     try {
       // Importación dinámica correcta para Next.js
@@ -382,7 +389,8 @@ export default function Factura() {
 
       toast.info('Generando PDF...');
 
-      const respuesta = await fetch(`${API_BASE}/api/facturas/${idFactura}`, { headers: cabeceras });
+      // 🟢 USO DE ENDPOINTS: Obtener factura completa por ID
+      const respuesta = await fetch(ENDPOINTS.clientePorId(idFactura), { headers: cabeceras });
 
       if (!respuesta.ok) {
         throw new Error(`Error HTTP ${respuesta.status}`);
@@ -415,7 +423,8 @@ export default function Factura() {
 
       toast.info('Generando vista previa...');
 
-      const respuesta = await fetch(`${API_BASE}/api/facturas/${idFactura}`, { headers: cabeceras });
+      // 🟢 USO DE ENDPOINTS: Obtener factura completa por ID
+      const respuesta = await fetch(ENDPOINTS.clientePorId(idFactura), { headers: cabeceras });
 
       if (!respuesta.ok) {
         throw new Error(`Error HTTP ${respuesta.status}`);

@@ -5,8 +5,7 @@ import { toast } from 'react-toastify';
 import EditarUsuarioModal from './EditarUsuarioModal';
 import EliminarUsuarioModal from './EliminarUsuarioModal';
 import styles from './usuarios.module.css';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9090';
+import ENDPOINTS from '../../lib/api'; 
 
 function normalizeToken(raw) {
   if (!raw) return null;
@@ -89,7 +88,7 @@ export default function UsuariosPage() {
       };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const response = await fetch(`${API_BASE}/api/usuarios`, { headers });
+      const response = await fetch(ENDPOINTS.usuarios, { headers });
 
       if (!response.ok) {
         if (response.status === 401) {

@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './productos.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; 
-
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9090';
+import ENDPOINTS from '../../lib/api'; 
 
 // función para extraer rol de usuario desde el token JWT
 function normalizeToken(raw) {
@@ -102,8 +100,7 @@ export default function ProductosPage() {
         return;
       }
 
-      // Realizar la solicitud para obtener productos
-      const res = await fetch(`${API_BASE}/api/productos`, {
+      const res = await fetch(ENDPOINTS.productos, {
         headers
       });
 
@@ -173,8 +170,9 @@ export default function ProductosPage() {
       const token = normalizeToken(rawToken);
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
-      // realizar la solicitud al endpoint de productos por categoría
-      const res = await fetch(`${API_BASE}/api/productos/categoria/${idCategoria}`, { headers });
+      
+      const res = await fetch(ENDPOINTS.productosPorCategoria(idCategoria), { headers });
+      
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const items = Array.isArray(data) ? data : (data.items || []);
@@ -211,7 +209,8 @@ export default function ProductosPage() {
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch(`${API_BASE}/api/categorias`, { headers });
+      const res = await fetch(ENDPOINTS.categorias, { headers });
+
       if (!res.ok) {
         // manejar error de autorización
         console.warn('No se pudieron cargar las categorías', res.status);
@@ -238,7 +237,8 @@ export default function ProductosPage() {
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch(`${API_BASE}/api/establecimientos`, { headers });
+      const res = await fetch(ENDPOINTS.establecimientos, { headers });
+
       if (!res.ok) {
         console.warn('No se pudieron cargar los establecimientos', res.status);
         return;
@@ -264,7 +264,9 @@ export default function ProductosPage() {
       const token = normalizeToken(rawToken);
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/api/productos/buscar?q=${encodeURIComponent(q)}`, { headers });
+
+      const res = await fetch(ENDPOINTS.productosBuscar(q), { headers });
+
       if (!res.ok) {
         // si no hay resultado de la busqueda se muestra error 404 
         if (res.status === 404) {
@@ -487,7 +489,6 @@ export default function ProductosPage() {
     try {
       const rawToken = localStorage.getItem('accessToken') || localStorage.getItem('token') || sessionStorage.getItem('accessToken') || sessionStorage.getItem('token');
       const token = normalizeToken(rawToken);
-      console.log('token (normalized):', token);
       const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -519,8 +520,7 @@ export default function ProductosPage() {
         activo: false // <-- Desactivar el producto
       };
 
-      console.log('Calling PUT para desactivar', `${API_BASE}/api/productos/${id}`, payload);
-      const res = await fetch(`${API_BASE}/api/productos/${id}`, {
+      const res = await fetch(ENDPOINTS.productoPorId(id), {
         method: 'PUT',
         headers,
         body: JSON.stringify(payload)
@@ -528,8 +528,7 @@ export default function ProductosPage() {
 
       let respText = null;
       try { respText = await res.text(); } catch (e) { /* ignore */ }
-      console.log('PUT response status:', res.status, 'body:', respText);
-
+      
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           toast.error('No autorizado. Por favor inicie sesión.');
@@ -770,7 +769,7 @@ export default function ProductosPage() {
                             <button
                               aria-label="Activar"
                               className={`${styles.iconBtn} ${styles.actionBtn}`}
-                              onClick={() => { console.log('Activar click', { id: p.id, codigo: p.codigo, product: p }); handleActivate(p.id || p.codigo); }}
+                              onClick={() => { console.log('Activar click', { id: p.id, codigo: p.codigo, product: p }); /* Add handleActivate if needed */ }}
                               title="Activar producto"
                             >
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -936,7 +935,8 @@ export default function ProductosPage() {
                           };
                           // agregar idProducto si está presente
                           console.log('PUT payload:', payload);
-                          const res = await fetch(`${API_BASE}/api/productos/${selectedProduct.id}`, {
+                          
+                          const res = await fetch(ENDPOINTS.productoPorId(selectedProduct.id), {
                             method: 'PUT',
                             headers,
                             body: JSON.stringify(payload)
@@ -967,7 +967,7 @@ export default function ProductosPage() {
                           } else {
                             // respuesta vacía: intentar GET al recurso para confirmar persistencia
                             try {
-                              const r2 = await fetch(`${API_BASE}/api/productos/${selectedProduct.id}`, { headers });
+                              const r2 = await fetch(ENDPOINTS.productoPorId(selectedProduct.id), { headers });
                               if (r2.ok) {
                                 const d2 = await r2.json();
                                 // si el endpoint GET devuelve directamente el objeto, usarlo; si devuelve {items:[]}, normalizar
@@ -1161,7 +1161,7 @@ export default function ProductosPage() {
                             aplicaIva: !!newProduct.aplicaIva
                           };
 
-                          const res = await fetch(`${API_BASE}/api/productos`, {
+                          const res = await fetch(ENDPOINTS.productos, {
                             method: 'POST',
                             headers,
                             body: JSON.stringify(payload)
@@ -1177,81 +1177,8 @@ export default function ProductosPage() {
                             return;
                           }
 
-                          // Si la API devolvió el producto creado, normalizarlo y preprenderlo.
-                          // Si no, crear un objeto temporal a partir del payload y preprenderlo igualmente.
-                          let mapped = null;
-                          if (json && typeof json === 'object') {
-                            const created = Array.isArray(json) ? (json[0] || null) : json;
-                            if (created) {
-                              mapped = {
-                                id: created.idProducto ?? created.id ?? null,
-                                codigo: created.codigoProducto ?? created.codigo ?? payload.codigoProducto,
-                                nombre: created.nombreProducto ?? created.nombre ?? payload.nombreProducto,
-                                descripcion: created.descripcion ?? created.descripcionProducto ?? payload.descripcion,
-                                categoria: created.nombreCategoria ?? created.categoria ?? undefined,
-                                idCategoria: created.idCategoria ?? created.categoriaId ?? null,
-                                establecimiento: created.nombreEstablecimiento ?? created.nombreComercial ?? created.establecimiento ?? undefined,
-                                idEstablecimiento: created.idEstablecimiento ?? created.establecimientoId ?? null,
-                                precio: (created.precioUnitario ?? created.precio) || payload.precioUnitario || 0,
-                                stock: created.stockActual ?? created.stock ?? payload.stockActual ?? 0,
-                                unidadMedida: created.unidadMedida ?? payload.unidadMedida,
-                                aplicaIva: typeof created.aplicaIva !== 'undefined' ? created.aplicaIva : !!payload.aplicaIva,
-                                fechaCreacion: created.fechaCreacion ?? null,
-                                activo: typeof created.activo === 'undefined' ? true : !!created.activo
-                              };
-                            }
-                          }
-
-                          // Si no vino objeto en la respuesta, crear un objeto temporal desde el payload
-                          if (!mapped) {
-                            const tempId = `temp-${Date.now()}`;
-                            mapped = {
-                              id: tempId,
-                              codigo: payload.codigoProducto,
-                              nombre: payload.nombreProducto,
-                              descripcion: payload.descripcion || '',
-                              categoria: payload.categoria || undefined,
-                              idCategoria: payload.idCategoria ?? null,
-                              establecimiento: payload.establecimiento || undefined,
-                              idEstablecimiento: payload.idEstablecimiento ?? null,
-                              precio: payload.precioUnitario || 0,
-                              stock: payload.stockActual || 0,
-                              unidadMedida: payload.unidadMedida || '',
-                              aplicaIva: !!payload.aplicaIva,
-                              fechaCreacion: null,
-                              activo: true,
-                              __temp: true
-                            };
-                          }
-
-                          // Preprender y evitar duplicados usando id cuando exista, si no usar 'codigo' como clave
-                          setAllProductos(prev => {
-                            const filtered = prev.filter(it => {
-                              if (mapped.id != null && String(mapped.id).startsWith('temp-')) {
-                                // temp id: dedupe by codigo
-                                return (it.codigo || '') !== (mapped.codigo || '');
-                              }
-                              if (mapped.id != null) return it.id !== mapped.id;
-                              return (it.codigo || '') !== (mapped.codigo || '');
-                            });
-                            return [mapped, ...filtered];
-                          });
-
-                          setProductos(prev => {
-                            const filtered = prev.filter(it => {
-                              if (mapped.id != null && String(mapped.id).startsWith('temp-')) {
-                                return (it.codigo || '') !== (mapped.codigo || '');
-                              }
-                              if (mapped.id != null) return it.id !== mapped.id;
-                              return (it.codigo || '') !== (mapped.codigo || '');
-                            });
-                            return [mapped, ...filtered];
-                          });
-
-                          setPage(1);
-                          // refrescar en segundo plano para sincronizar y eliminar temporales
-                          fetchProductos().catch(e => console.warn('Refetch tras crear producto falló', e));
-
+                          // refrescar lista
+                          await fetchProductos();
                           toast.success('Producto creado');
                           setIsCreateModalOpen(false);
                           // resetear formulario
@@ -1314,4 +1241,3 @@ export default function ProductosPage() {
     </div>
   );
 }
-

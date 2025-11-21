@@ -8,19 +8,16 @@ import 'react-toastify/dist/ReactToastify.css';
 import ClienteModal from './ClienteModal';
 import DireccionModal from './DireccionModal';
 import Toggle from '@/app/components/Toggle';
-
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:9090';
-
+// 🟢 IMPORTANTE: Importamos las rutas centralizadas
+import ENDPOINTS from '../../lib/api'; 
 
 function limpiarToken(tokenSucio) {
   if (!tokenSucio) return null;
   let token = String(tokenSucio);
 
- 
   if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("'") && token.endsWith("'"))) {
     token = token.slice(1, -1);
   }
-
   
   try {
     const objetoParseado = JSON.parse(token);
@@ -43,7 +40,6 @@ function obtenerDatosUsuario() {
     const rol = localStorage.getItem('rol');
     const token = localStorage.getItem('accessToken');
     
-   
     if (!nombre && !email && !rol) {
       return null;
     }
@@ -188,9 +184,10 @@ export default function Clientes() {
         return;
       }
 
-      let url = `${API_BASE}/api/clientes`;
+      // 🟢 USO DE ENDPOINTS
+      let url = ENDPOINTS.clientes;
       if (estadoFiltro === 'Activados') {
-        url = `${API_BASE}/api/clientes/activos`;
+        url = ENDPOINTS.clientesActivos;
       }
 
       const respuesta = await fetch(url, { headers: cabeceras });
@@ -257,7 +254,10 @@ export default function Clientes() {
         return;
       }
 
-      const respuesta = await fetch(`${API_BASE}/api/clientes/${id}/desactivar`, { 
+      // 🟢 USO DE ENDPOINTS: desactivarCliente(id)
+      const url = ENDPOINTS.desactivarCliente(id);
+
+      const respuesta = await fetch(url, { 
         method: 'PATCH', 
         headers: cabeceras,
         body: JSON.stringify({ activo: nuevoEstado })
@@ -308,7 +308,10 @@ export default function Clientes() {
         return;
       }
 
-      const respuesta = await fetch(`${API_BASE}/api/clientes/${id}`, { 
+      // 🟢 USO DE ENDPOINTS: clientePorId(id) para DELETE
+      const url = ENDPOINTS.clientePorId(id);
+
+      const respuesta = await fetch(url, { 
         method: 'DELETE', 
         headers: cabeceras 
       });
@@ -477,36 +480,37 @@ export default function Clientes() {
                           {cliente.activo ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
-                     
+                      
                       {(permisosUsuario.puedeEditar || permisosUsuario.puedeEliminar) && (
                         <td className={styles.actionsCol}>
                           {permisosUsuario.puedeEditar && (
                             <button 
-                              aria-label="Editar"
-                              className={`${styles.iconBtn} ${styles.actionBtn}`}
+                              className={styles.iconBtn} 
                               onClick={() => abrirModalEditar(cliente)}
                               title="Editar cliente"
                             >
-                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                                <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                              </svg>
+                              <svg width={18} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#0b2a4a" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                            <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          </svg>
                             </button>
                           )}
                           
                           {permisosUsuario.puedeEliminar && (
                             <button 
-                              aria-label="Eliminar"
-                              className={`${styles.iconBtnDanger} ${styles.actionBtnDanger}`}
+                              className={styles.iconBtnDanger} 
                               onClick={() => eliminarCliente(cliente.idCliente)}
                               title="Eliminar cliente"
                             >
-                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                                <path d="M3 6h18" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M10 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M14 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M9 6l1-2h4l1 2" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+                              viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
+                              >
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M4 7l16 0" /><path d="M10 11l0 6" />
+                                <path d="M14 11l0 6" />
+                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
                               </svg>
                             </button>
                           )}

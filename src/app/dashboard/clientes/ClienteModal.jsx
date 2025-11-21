@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import styles from './cliente.module.css';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9090';
+// 🟢 IMPORTANTE: Importamos las rutas centralizadas
+// Ajusta la ruta relativa si tu estructura de carpetas es diferente
+import ENDPOINTS from '../../lib/api'; 
 
 function normalizeToken(raw) {
   if (!raw) return null;
@@ -112,9 +113,10 @@ export default function ClienteModal({ isOpen, onClose, cliente = null, onSucces
         'Authorization': `Bearer ${token}`
       };
 
+      // 🟢 USO DE ENDPOINTS CENTRALIZADOS
       const url = isEditing 
-        ? `${API_BASE}/api/clientes/${cliente.idCliente}`
-        : `${API_BASE}/api/clientes`;
+        ? ENDPOINTS.clientePorId(cliente.idCliente) // PUT: Usar función para ID
+        : ENDPOINTS.clientes;                       // POST: Usar ruta base
 
       const method = isEditing ? 'PUT' : 'POST';
 

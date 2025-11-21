@@ -2,10 +2,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styles from './dashboard.module.css';
 import { usePathname, useRouter } from 'next/navigation';
+import ENDPOINTS from '../lib/api'; 
 
 // Chart.js
-// configuración e importación de componentes necesarios de Chart.js y react-chartjs-2  
-//con esto se podrá mostrar gráficos en el panel de control
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,8 +21,6 @@ import {
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9090';
 
 function normalizeToken(raw) {
   if (!raw) return null;
@@ -82,23 +79,19 @@ export default function DashboardPage(){
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      // Obtener datos de productos
-      const productosRes = await fetch(`${API_BASE}/api/productos`, { headers }).catch(() => null);
+      const productosRes = await fetch(ENDPOINTS.productos, { headers }).catch(() => null);
       const productosData = productosRes?.ok ? await productosRes.json() : [];
       const productos = Array.isArray(productosData) ? productosData : (productosData.items || []);
       
-      // Obtener datos de clientes
-      const clientesRes = await fetch(`${API_BASE}/api/clientes`, { headers }).catch(() => null);
+      const clientesRes = await fetch(ENDPOINTS.clientes, { headers }).catch(() => null);
       const clientesData = clientesRes?.ok ? await clientesRes.json() : [];
       const clientes = Array.isArray(clientesData) ? clientesData : (clientesData.items || []);
       
-      // Obtener datos de establecimientos
-      const establecimientosRes = await fetch(`${API_BASE}/api/establecimientos`, { headers }).catch(() => null);
+      const establecimientosRes = await fetch(ENDPOINTS.establecimientos, { headers }).catch(() => null);
       const establecimientosData = establecimientosRes?.ok ? await establecimientosRes.json() : [];
       const establecimientos = Array.isArray(establecimientosData) ? establecimientosData : (establecimientosData.items || []);
 
-      // Obtener facturas
-      const facturasRes = await fetch(`${API_BASE}/api/facturas`, { headers }).catch(() => null);
+      const facturasRes = await fetch(ENDPOINTS.facturas, { headers }).catch(() => null);
       const facturasData = facturasRes?.ok ? await facturasRes.json() : [];
       const facturas = Array.isArray(facturasData) ? facturasData : (facturasData.items || facturasData.facturas || []);
 
@@ -179,7 +172,7 @@ export default function DashboardPage(){
 
   return (
     <>
-   
+    
     <main className={styles.content}>
       <section>
         <div className={styles.panelHeader}>

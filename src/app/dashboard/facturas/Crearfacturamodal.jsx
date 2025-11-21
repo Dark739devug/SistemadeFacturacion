@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import styles from './crear-factura-modal.module.css';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9090';
+import ENDPOINTS from '../../lib/api'; 
 
 function normalizeToken(raw) {
   if (!raw) return null;
@@ -159,7 +158,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const respProductos = await fetch(`${API_BASE}/api/productos`, { headers });
+      const respProductos = await fetch(ENDPOINTS.productos, { headers });
 
       if (respProductos.ok) {
         const data = await respProductos.json();
@@ -183,7 +182,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const url = `${API_BASE}/api/establecimientos/nit/${encodeURIComponent(nitEstablecimiento.trim())}`;
+      const url = ENDPOINTS.establecimientoPorNit(nitEstablecimiento.trim());
       
       const res = await fetch(url, { headers });
 
@@ -220,7 +219,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const url = `${API_BASE}/api/clientes/nit/${encodeURIComponent(nitCliente.trim())}`;
+      const url = ENDPOINTS.clientePorNit(nitCliente.trim());
 
       const res = await fetch(url, { headers });
 
@@ -541,7 +540,7 @@ export default function CrearFacturaModal({ isOpen, onClose, onSuccess }) {
         'Authorization': `Bearer ${token}`
       };
 
-      const res = await fetch(`${API_BASE}/api/facturas`, {
+      const res = await fetch(ENDPOINTS.facturas, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload)

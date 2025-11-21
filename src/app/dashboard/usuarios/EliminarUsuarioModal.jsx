@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import styles from './eliminar-usuario-modal.module.css';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9090';
+import ENDPOINTS from '../../lib/api'; 
 
 function normalizeToken(raw) {
   if (!raw) return null;
@@ -51,7 +50,7 @@ export default function EliminarUsuarioModal({ isOpen, onClose, usuario, onSucce
         'Accept': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/api/usuarios/${usuarioId}`, {
+      const response = await fetch(ENDPOINTS.usuarioPorId(usuarioId), {
         method: 'DELETE',
         headers
       });

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import styles from './registro.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ENDPOINTS from '../lib/api';
 
 export default function CrearAgencia() {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function CrearAgencia() {
     const newValue = type === 'checkbox' ? checked : value;
     setForm(prev => ({ ...prev, [name]: newValue }));
     const fieldError = validateField(name, newValue);
-  setErrors(prev => ({ ...prev, [name]: fieldError }));
+    setErrors(prev => ({ ...prev, [name]: fieldError }));
   }
 
   function validate() {
@@ -62,70 +63,70 @@ export default function CrearAgencia() {
   }
 
   async function handleSubmit(e) {
-  e.preventDefault();
-  const validation = validate();
-  const hasErrors = Object.keys(validation).length > 0;
-  if (hasErrors) {
-    setErrors(validation);
-    // encontrar el primer campo con error en el orden deseado
-    const order = ['nombre','apellido','email','contrasena'];
-    const firstKey = order.find(k => validation[k]);
-    const firstMsg = firstKey ? `${fieldLabels[firstKey]}: ${validation[firstKey]}` : 'Hay errores en el formulario.';
-    toast.error(firstMsg);
-    // intentar enfocar el campo
-    try {
-      const el = document.getElementsByName(firstKey)[0];
-      if (el && typeof el.focus === 'function') el.focus();
-    } catch (e) {}
-    return;
-  }
-  setError('');
-
-    try {
-    const response = await fetch('http://localhost:9090/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: form.nombre,
-        apellido: form.apellido,
-        email: form.email,
-        contrasena: form.contrasena,
-        idRol: 2
-      })
-    });
-
-    if (!response.ok) {
-      // Intenta leer el mensaje de error del backend si está disponible y loguearlo
-      let errorMsg = 'Error al registrar usuario';
-      let text = '';
+    e.preventDefault();
+    const validation = validate();
+    const hasErrors = Object.keys(validation).length > 0;
+    if (hasErrors) {
+      setErrors(validation);
+      // encontrar el primer campo con error en el orden deseado
+      const order = ['nombre','apellido','email','contrasena'];
+      const firstKey = order.find(k => validation[k]);
+      const firstMsg = firstKey ? `${fieldLabels[firstKey]}: ${validation[firstKey]}` : 'Hay errores en el formulario.';
+      toast.error(firstMsg);
+      // intentar enfocar el campo
       try {
-        text = await response.text();
-        try {
-          const errorData = JSON.parse(text);
-          errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          // no-json response, use raw text
-          if (text) errorMsg = text;
-        }
-      } catch (e) {
-        // ignore
-      }
-      console.error('Registro fallido:', response.status, response.statusText, text);
-      setError(errorMsg);
+        const el = document.getElementsByName(firstKey)[0];
+        if (el && typeof el.focus === 'function') el.focus();
+      } catch (e) {}
       return;
     }
+    setError('');
 
-    // Si el registro es exitoso, mostrar mensaje y luego redirigir al login
-    setSuccess(true);
-    // esperar 2.5s para mostrar el mensaje y luego redirigir
-    setTimeout(() => {
-      router.push('/login');
-    }, 2500);
-  } catch (err) {
-    console.error('Fetch error:', err);
-    setError('Error al conectar con el servidor: ' + (err?.message || String(err)));
+    try {
+      const response = await fetch(ENDPOINTS.registro, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: form.nombre,
+          apellido: form.apellido,
+          email: form.email,
+          contrasena: form.contrasena,
+          idRol: 2
+        })
+      });
+
+      if (!response.ok) {
+        // Intenta leer el mensaje de error del backend si está disponible y loguearlo
+        let errorMsg = 'Error al registrar usuario';
+        let text = '';
+        try {
+          text = await response.text();
+          try {
+            const errorData = JSON.parse(text);
+            errorMsg = errorData.message || errorMsg;
+          } catch (e) {
+            // no-json response, use raw text
+            if (text) errorMsg = text;
+          }
+        } catch (e) {
+          // ignore
+        }
+        console.error('Registro fallido:', response.status, response.statusText, text);
+        setError(errorMsg);
+        return;
+      }
+
+      // Si el registro es exitoso, mostrar mensaje y luego redirigir al login
+      setSuccess(true);
+      // esperar 2.5s para mostrar el mensaje y luego redirigir
+      setTimeout(() => {
+        router.push('/login');
+      }, 2500);
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError('Error al conectar con el servidor: ' + (err?.message || String(err)));
+    }
   }
-}
 
   return (
     <div className={styles.pageWrap}>
@@ -171,8 +172,6 @@ export default function CrearAgencia() {
               </div>
             </label>
           </div>
-
-          
 
           <div className={styles.actions}>
             <button type="button" className={styles.backButton} onClick={() => router.push('/login')}>
