@@ -4,9 +4,9 @@ import { useRouter } from 'next/navigation';
 import styles from './registro.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import ENDPOINTS from '../lib/api';
+import ENDPOINTS from '../services/api';
 
-export default function CrearAgencia() {
+export default function CrearAgencia() {  
   const router = useRouter();
   const [form, setForm] = useState({
     nombre: '',

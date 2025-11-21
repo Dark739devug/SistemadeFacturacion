@@ -5,7 +5,7 @@ import styles from './establecimientos.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 // 🟢 IMPORTANTE: Importamos las rutas centralizadas
-import ENDPOINTS from '../../lib/api'; 
+import ENDPOINTS from '../../services/api'; 
 
 function normalizeToken(raw) {
   if (!raw) return null;

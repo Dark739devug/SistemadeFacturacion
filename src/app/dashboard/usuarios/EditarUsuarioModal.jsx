@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import styles from './editar-usuario-modal.module.css';
-import ENDPOINTS from '../../lib/api'; 
+import ENDPOINTS from '../../services/api'; 
 
 function normalizeToken(raw) {
   if (!raw) return null;

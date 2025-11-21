@@ -9,7 +9,7 @@ import ClienteModal from './ClienteModal';
 import DireccionModal from './DireccionModal';
 import Toggle from '@/app/components/Toggle';
 // 🟢 IMPORTANTE: Importamos las rutas centralizadas
-import ENDPOINTS from '../../lib/api'; 
+import ENDPOINTS from '../../services/api'; 
 
 function limpiarToken(tokenSucio) {
   if (!tokenSucio) return null;

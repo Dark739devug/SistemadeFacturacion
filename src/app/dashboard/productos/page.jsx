@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './productos.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; 
-import ENDPOINTS from '../../lib/api'; 
+import ENDPOINTS from '../../services/api'; 
 
 // función para extraer rol de usuario desde el token JWT
 function normalizeToken(raw) {

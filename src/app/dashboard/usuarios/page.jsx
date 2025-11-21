@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import EditarUsuarioModal from './EditarUsuarioModal';
 import EliminarUsuarioModal from './EliminarUsuarioModal';
 import styles from './usuarios.module.css';
-import ENDPOINTS from '../../lib/api'; 
+import ENDPOINTS from '../../services/api'; 
 
 function normalizeToken(raw) {
   if (!raw) return null;

@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styles from './dashboard.module.css';
 import { usePathname, useRouter } from 'next/navigation';
-import ENDPOINTS from '../lib/api'; 
+import ENDPOINTS from '../services/api'; 
 
 // Chart.js
 import {
