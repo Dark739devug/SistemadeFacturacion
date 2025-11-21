@@ -2,425 +2,349 @@
 
 import { useState, useEffect, useRef } from "react"
 import api from "../services/api"
-import { Shield, FileCheck, AlertCircle, CheckCircle, Clock, Search, Upload } from "lucide-react"
+import { 
+  Shield, FileCheck, AlertCircle, CheckCircle, Clock, 
+  Search, Upload, Copy, RefreshCw, FileText 
+} from "lucide-react"
 import "./Certificar.css"
 
 const Certificar = () => {
+  // Estados de UI
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
-  const [facturas, setFacturas] = useState([])
+  const [loadingData, setLoadingData] = useState(false)
+  
+  // Datos
   const [emisores, setEmisores] = useState([])
   const [emisorSeleccionado, setEmisorSeleccionado] = useState("")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [loadingFacturas, setLoadingFacturas] = useState(true)
-  const fileInputRef = useRef(null)
-
+  
+  // Formulario Manual
   const [formData, setFormData] = useState({
     xmlDTE: "",
     nitEmisor: "",
   })
+  
+  // Resultados
+  const [result, setResult] = useState(null)
+  const fileInputRef = useRef(null)
 
   // ---------------------------------------------------------
-  // CARGA INICIAL
+  // 1. CARGA INICIAL DE EMISORES
   // ---------------------------------------------------------
   useEffect(() => {
-    loadFacturas()
     loadEmisores()
   }, [])
 
-  const loadFacturas = async () => {
-    setLoadingFacturas(true)
-    try {
-      const res = await api.get("/facturas")
-      setFacturas(res?.data ?? [])
-    } catch {
-      setFacturas([])
-    } finally {
-      setLoadingFacturas(false)
-    }
-  }
-
   const loadEmisores = async () => {
+    setLoadingData(true)
     try {
-      const res = await api.get("/emisores")
-      console.log("Emisores cargados:", res.data)
-      setEmisores((res?.data ?? []).filter((e) => e?.activo))
-    } catch {
-      setEmisores([])
+      const res = await api.get("/emisores") 
+      const activos = (res?.data ?? []).filter((e) => e.activo)
+      setEmisores(activos)
+    } catch (error) {
+      console.error("Error cargando emisores:", error)
+      alert("No se pudieron cargar los emisores. Verifique que el backend esté corriendo.")
+    } finally {
+      setLoadingData(false)
     }
   }
 
   // ---------------------------------------------------------
-  // EXTRAER EMISOR DESDE XML
+  // 2. PARSER XML ROBUSTO (Soporta namespaces gte:)
   // ---------------------------------------------------------
-  const getEmisorFromXML = (xmlString) => {
+  const extraerNitDelXML = (xmlString) => {
     try {
       const parser = new DOMParser()
       const xmlDoc = parser.parseFromString(xmlString, "text/xml")
-      const emisorNode = xmlDoc.querySelector("Emisor")
+      
+      // Buscamos la etiqueta Emisor con o sin namespace gte:
+      const emisorNode = 
+        xmlDoc.getElementsByTagName("gte:Emisor")[0] || 
+        xmlDoc.getElementsByTagName("Emisor")[0]
+
       if (!emisorNode) return null
 
-      const nitEmisor =
-        emisorNode.getAttribute("NITEmisor") ||
-        emisorNode.querySelector("NIT")?.textContent
-
-      const nombreComercial =
-        emisorNode.getAttribute("NombreComercial") ||
-        emisorNode.querySelector("NombreComercial")?.textContent
-
-      if (!nitEmisor) return null
-      return { nitEmisor, nombreComercial }
-    } catch {
+      // Buscamos el atributo NITEmisor
+      const nit = emisorNode.getAttribute("NITEmisor")
+      return nit
+    } catch (e) {
+      console.error("Error parseando XML", e)
       return null
     }
   }
 
   // ---------------------------------------------------------
-  // VERIFICAR FIRMA ELECTRÓNICA
+  // 3. MANEJO DEL FORMULARIO
   // ---------------------------------------------------------
-  const tieneFirmaElectronica = (xmlString) => {
-    if (!xmlString) return false
-    try {
-      const parser = new DOMParser()
-      const xmlDoc = parser.parseFromString(xmlString, "text/xml")
-      return xmlDoc.querySelector("FirmaElectronica, Signature") !== null
-    } catch {
-      return false
+  const handleXmlChange = (e) => {
+    const xml = e.target.value
+    const nitDetectado = extraerNitDelXML(xml)
+    
+    setFormData(prev => ({
+      ...prev,
+      xmlDTE: xml,
+      // Si detectamos NIT en el XML, lo pre-seleccionamos en el estado local
+      // Pero NO forzamos el dropdown si el usuario ya eligió otro manualmente
+      nitEmisor: nitDetectado || prev.nitEmisor
+    }))
+
+    // Intentar sincronizar el dropdown si encontramos el NIT
+    if (nitDetectado) {
+      const emisorEncontrado = emisores.find(e => e.nitEmisor === nitDetectado)
+      if (emisorEncontrado) {
+        setEmisorSeleccionado(emisorEncontrado.nitEmisor) // Usamos NIT como value del select
+      }
     }
   }
 
-  // ---------------------------------------------------------
-  // GENERAR FIRMA ELECTRÓNICA ALEATORIA
-  // ---------------------------------------------------------
-  const generarFirmaElectronica = () => {
-    return `<FirmaElectronica>${Math.random().toString(36).substring(2, 15)}</FirmaElectronica>`
-  }
+  const handleFileParams = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
 
-  // ---------------------------------------------------------
-  // OBTENER NIT DEL EMISOR (XML o seleccionado o por defecto)
-  // ---------------------------------------------------------
-  const obtenerNitEmisor = (xmlDTE) => {
-    if (emisorSeleccionado) {
-      const emisor = emisores.find((e) => Number(e.idEmisor) === Number(emisorSeleccionado))
-      if (!emisor) throw new Error("El emisor seleccionado no existe")
-      return emisor.nitEmisor
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const xmlContent = event.target.result
+      // Simulamos el evento de cambio manual
+      handleXmlChange({ target: { value: xmlContent } })
     }
-
-    const emisorXML = getEmisorFromXML(xmlDTE)
-    if (emisorXML) return emisorXML.nitEmisor
-
-    if (emisores.length > 0) return emisores[0].nitEmisor
-
-    // Si no hay ningún emisor, usar uno genérico
-    return "9999999-9"
+    reader.readAsText(file)
   }
 
   // ---------------------------------------------------------
-  // CERTIFICAR FACTURA INDIVIDUAL DESDE LISTA
-  // ---------------------------------------------------------
-  const certificarFactura = async (idFactura) => {
-    if (!confirm("¿Desea certificar esta factura?")) return
-
-    setLoading(true)
-    try {
-      const factura = facturas.find((f) => f.idFactura === idFactura)
-      if (!factura) throw new Error("Factura no encontrada")
-
-      let xmlDTE = factura.xmlDTE
-      if (!tieneFirmaElectronica(xmlDTE)) xmlDTE += generarFirmaElectronica()
-
-      const nitEmisor = obtenerNitEmisor(xmlDTE)
-
-      console.log("Payload a certificar:", { xmlDTE, nitEmisor })
-
-      const res = await api.post(`/facturas/${idFactura}/certificar`, { xmlDTE, nitEmisor })
-      setResult({ success: true, data: res?.data })
-      alert("Factura certificada exitosamente")
-      loadFacturas()
-    } catch (error) {
-      const msg = error?.response?.data?.mensaje || error?.message || "Error al certificar la factura"
-      setResult({ success: false, message: msg })
-      alert("Error: " + msg)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // ---------------------------------------------------------
-  // CERTIFICAR DESDE XML (FORMULARIO)
+  // 4. ENVIAR A CERTIFICAR (POST AL BACKEND)
   // ---------------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.xmlDTE.trim()) return alert("El XML no puede estar vacío")
+    
+    // Validaciones
+    if (!formData.xmlDTE.trim()) return alert("El XML es obligatorio")
+    if (!formData.nitEmisor) return alert("Debe haber un NIT de emisor asociado")
 
     setLoading(true)
     setResult(null)
 
     try {
-      // Separar múltiples XML por doble salto de línea
-      const xmls = formData.xmlDTE.split(/\n\s*\n/).filter((x) => x.trim())
-      const resultados = []
-
-      for (let xml of xmls) {
-        if (!tieneFirmaElectronica(xml)) xml += generarFirmaElectronica()
-        const nitEmisor = obtenerNitEmisor(xml)
-        const payload = { xmlDTE: xml, nitEmisor }
-        const res = await api.post("/certificacion/certificar", payload)
-        resultados.push(res?.data)
+      // Payload exacto para tu DTERequestDTO
+      const payload = {
+        nitEmisor: formData.nitEmisor,
+        xmlDTE: formData.xmlDTE
       }
 
-      setResult({ success: true, data: resultados })
-      setFormData({ xmlDTE: "", nitEmisor: "" })
-      if (fileInputRef.current) fileInputRef.current.value = ""
-      loadFacturas()
-      alert("Todos los XML fueron certificados exitosamente")
+      console.log("Enviando a CertAPI...", payload)
+
+      // LLAMADA AL CONTROLLER QUE ARREGLAMOS
+      const res = await api.post("/certificacion/certificar", payload)
+
+      setResult({ 
+        success: true, 
+        data: res.data 
+      })
+
     } catch (error) {
-      const msg = error?.response?.data?.mensaje || error?.message || "Error al certificar el DTE"
+      console.error(error)
+      const msg = error?.response?.data?.mensaje || 
+                  error?.response?.data?.message || // Por si el GlobalExceptionHandler responde
+                  error?.message || 
+                  "Error desconocido al certificar"
+      
       setResult({ success: false, message: msg })
-      alert("Error: " + msg)
     } finally {
       setLoading(false)
     }
   }
 
   // ---------------------------------------------------------
-  // ACTUALIZAR NIT AUTOMÁTICAMENTE AL PEGAR XML
+  // 5. UTILIDADES UI
   // ---------------------------------------------------------
-  useEffect(() => {
-    if (formData.xmlDTE && !emisorSeleccionado) {
-      const emisorXML = getEmisorFromXML(formData.xmlDTE)
-      if (emisorXML) setFormData((prev) => ({ ...prev, nitEmisor: emisorXML.nitEmisor }))
-    }
-  }, [formData.xmlDTE, emisorSeleccionado])
-
-  // ---------------------------------------------------------
-  // BADGE ESTADO
-  // ---------------------------------------------------------
-  const getStatusBadge = (estado) => {
-    const map = {
-      CERTIFICADA: { icon: CheckCircle, color: "#22c55e", bg: "#f0fdf4" },
-      PENDIENTE: { icon: Clock, color: "#f59e0b", bg: "#fffbeb" },
-      ERROR: { icon: AlertCircle, color: "#ef4444", bg: "#fef2f2" },
-    }
-    const badge = map[estado] || map.PENDIENTE
-    const Icon = badge.icon
-    return (
-      <span className="status-badge" style={{ background: badge.bg, color: badge.color }}>
-        <Icon size={14} /> {estado}
-      </span>
-    )
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+    alert("Copiado al portapapeles")
   }
 
-  // ---------------------------------------------------------
-  // FILTRO DE FACTURAS
-  // ---------------------------------------------------------
-  const filteredFacturas = facturas.filter((f) => {
-    const term = searchTerm.toLowerCase()
-    return (
-      (f?.numeroFactura ?? "").toString().toLowerCase().includes(term) ||
-      (f?.nombreCliente ?? "").toString().toLowerCase().includes(term)
-    )
-  })
-
-  // ---------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------
-  const handleMultipleFilesUpload = (e) => {
-    const files = Array.from(e.target.files)
-    files.forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const xmlContent = event.target.result
-        setFormData((prev) => ({
-          ...prev,
-          xmlDTE: prev.xmlDTE ? prev.xmlDTE + "\n\n" + xmlContent : xmlContent,
-        }))
-      }
-      reader.readAsText(file)
-    })
+  const limpiarFormulario = () => {
+    setFormData({ xmlDTE: "", nitEmisor: "" })
+    setEmisorSeleccionado("")
+    setResult(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
   return (
     <div className="certificar-page">
       <div className="page-header">
-        <div>
-          <h1>Certificar DTE</h1>
-          <p>Gestión y certificación de documentos tributarios electrónicos.</p>
+        <div className="header-content">
+          <h1><Shield className="icon-title"/> Certificador FEL</h1>
+          <p>Ambiente de Pruebas y Certificación Manual</p>
         </div>
-      </div>
-
-      {/* Selector de Emisor */}
-      <div className={`emisor-selector-card ${emisorSeleccionado ? "selected" : "required"}`}>
-        <div className="emisor-header">
-          <h3>Seleccionar Emisor Certificador</h3>
-          {!emisorSeleccionado ? (
-            <span className="required-badge">REQUERIDO</span>
-          ) : (
-            <span className="selected-badge">✓ Seleccionado</span>
-          )}
-        </div>
-
-        <select
-          className={`emisor-select ${emisorSeleccionado ? "filled" : "empty"}`}
-          value={emisorSeleccionado}
-          onChange={(e) => {
-            const id = e.target.value
-            setEmisorSeleccionado(id)
-            const emisor = emisores.find((x) => Number(x.idEmisor) === Number(id))
-            setFormData((prev) => ({ ...prev, nitEmisor: emisor?.nitEmisor ?? "" }))
-          }}
-        >
-          <option value="">-- Seleccione un emisor --</option>
-          {emisores.map((e) => (
-            <option key={e.idEmisor} value={e.idEmisor}>
-              {e.nombreComercial} - NIT {e.nitEmisor}
-            </option>
-          ))}
-        </select>
+        <button onClick={loadEmisores} className="btn-refresh" title="Recargar Emisores">
+          <RefreshCw size={18} className={loadingData ? "spin" : ""} />
+        </button>
       </div>
 
       <div className="certificar-layout">
-        {/* FORMULARIO */}
+        
+        {/* COLUMNA IZQUIERDA: FORMULARIO */}
         <div className="form-section">
-          <div className="info-box">
-            <Shield size={24} />
-            <div>
-              <h3>Sistema FEL</h3>
-              <p>Ingrese XML para certificar el documento tributario.</p>
+          
+          {/* 1. SELECCIÓN DE EMISOR */}
+          <div className="card-panel">
+            <div className="panel-header">
+              <h3>1. Emisor Firmante</h3>
+              <span className="step-badge">Requerido</span>
+            </div>
+            
+            <div className="form-group">
+              <label>Seleccione la empresa que firma:</label>
+              <select
+                className="input-select"
+                value={emisorSeleccionado}
+                onChange={(e) => {
+                  setEmisorSeleccionado(e.target.value)
+                  setFormData(prev => ({ ...prev, nitEmisor: e.target.value }))
+                }}
+                disabled={loading}
+              >
+                <option value="">-- Seleccione Emisor --</option>
+                {emisores.map((e) => (
+                  <option key={e.idEmisor || e.nitEmisor} value={e.nitEmisor}>
+                    {e.nombreComercial} (NIT: {e.nitEmisor})
+                  </option>
+                ))}
+              </select>
+              <small className="hint">
+                El NIT seleccionado se usará para buscar la firma electrónica (.p12) en el servidor.
+              </small>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>NIT del Emisor</label>
-              <input type="text" value={formData.nitEmisor} disabled />
+          {/* 2. CARGA DE XML */}
+          <div className="card-panel">
+            <div className="panel-header">
+              <h3>2. Documento XML</h3>
+              <button 
+                type="button" 
+                className="btn-text"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload size={16} /> Cargar Archivo
+              </button>
             </div>
 
-            <div className="form-group">
-              <label>Cargar Archivo XML</label>
-              <div className="file-upload-container">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xml"
-                  multiple
-                  onChange={handleMultipleFilesUpload}
-                  style={{ display: "none" }}
-                  id="xml-file-input"
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xml"
+              onChange={handleFileParams}
+              style={{ display: "none" }}
+            />
+
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <textarea
+                  className="xml-input"
+                  rows={15}
+                  value={formData.xmlDTE}
+                  onChange={handleXmlChange}
+                  placeholder='Pegue aquí el XML generado por el sistema de facturación... &#10;<gte:GTDocumento...>'
+                  disabled={loading}
                 />
-                <button
-                  type="button"
-                  className="btn-upload"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={18} /> Seleccionar archivo(s) .xml
-                </button>
-                <span className="file-hint">O pegue los XML directamente abajo</span>
               </div>
+
+              <div className="form-actions">
+                <button type="button" className="btn-secondary" onClick={limpiarFormulario}>
+                  Limpiar
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  disabled={loading || !formData.xmlDTE || !formData.nitEmisor}
+                >
+                  {loading ? (
+                    <><div className="spinner-mini"></div> Procesando...</>
+                  ) : (
+                    <><CheckCircle size={18} /> Certificar Documento</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* COLUMNA DERECHA: RESULTADOS */}
+        <div className="result-section-container">
+          {!result && (
+            <div className="empty-state">
+              <FileText size={48} opacity={0.2} />
+              <p>Los resultados de la certificación aparecerán aquí</p>
             </div>
+          )}
 
-            <div className="form-group">
-              <label>XML del DTE</label>
-              <textarea
-                rows={12}
-                value={formData.xmlDTE}
-                onChange={(e) => setFormData({ ...formData, xmlDTE: e.target.value })}
-                placeholder="Pegue aquí el XML sin formato o cargue un archivo arriba…"
-              />
-            </div>
-
-            <button className="btn-primary btn-large" disabled={loading}>
-              {loading ? <div className="spinner"></div> : <Shield size={20} />}
-              {loading ? " Certificando…" : " Certificar DTE"}
-            </button>
-          </form>
-
-          {/* RESULTADO */}
           {result && (
-            <div className={`result-section ${result.success ? "success" : "error"}`}>
+            <div className={`result-card ${result.success ? "success" : "error"}`}>
               <div className="result-header">
-                {result.success ? <FileCheck size={28} /> : <AlertCircle size={28} />}
-                <h3>{result.success ? "Certificación Exitosa" : "Error"}</h3>
+                {result.success ? (
+                  <>
+                    <div className="icon-bg success"><CheckCircle size={24} /></div>
+                    <div>
+                      <h3>¡Certificación Exitosa!</h3>
+                      <p className="timestamp">{new Date().toLocaleString()}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="icon-bg error"><AlertCircle size={24} /></div>
+                    <div>
+                      <h3>Error de Certificación</h3>
+                      <p>No se pudo procesar el documento</p>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="result-body">
                 {result.success ? (
-                  Array.isArray(result.data) ? (
-                    result.data.map((r, i) => (
-                      <div key={i} className="result-item">
-                        <b>UUID:</b> {r.uuid} | <b>Serie:</b> {r.serie} | <b>Número:</b> {r.numero} | <b>Autorización:</b> {r.numeroAutorizacion}
-                        {r.xmlCertificado && (
-                          <textarea className="xml-output" value={r.xmlCertificado} readOnly rows={6} />
-                        )}
+                  <>
+                    <div className="data-grid">
+                      <div className="data-item">
+                        <label>UUID (Folio Fiscal)</label>
+                        <div className="value-copy">
+                          <span>{result.data.uuid}</span>
+                          <button onClick={() => copyToClipboard(result.data.uuid)}><Copy size={14}/></button>
+                        </div>
                       </div>
-                    ))
-                  ) : (
-                    <>
-                      <div className="result-item"><b>UUID:</b> {result.data?.uuid}</div>
-                      <div className="result-item"><b>Serie:</b> {result.data?.serie}</div>
-                      <div className="result-item"><b>Número:</b> {result.data?.numero}</div>
-                      <div className="result-item"><b>Autorización:</b> {result.data?.numeroAutorizacion}</div>
-                      {result.data?.xmlCertificado && (
-                        <textarea className="xml-output" value={result.data.xmlCertificado} readOnly rows={8} />
-                      )}
-                    </>
-                  )
+                      <div className="data-item">
+                        <label>No. Autorización</label>
+                        <span>{result.data.numeroAutorizacion}</span>
+                      </div>
+                      <div className="data-item">
+                        <label>Fecha Certificación</label>
+                        <span>{result.data.fechaCertificacion}</span>
+                      </div>
+                    </div>
+
+                    <div className="xml-preview-container">
+                      <div className="preview-header">
+                        <label>XML Certificado (Firmado)</label>
+                        <button onClick={() => copyToClipboard(result.data.xmlCertificado)}>
+                          <Copy size={14}/> Copiar XML
+                        </button>
+                      </div>
+                      <textarea 
+                        readOnly 
+                        value={result.data.xmlCertificado} 
+                        className="xml-output"
+                      />
+                    </div>
+                  </>
                 ) : (
-                  <p className="error-message">{result.message}</p>
+                  <div className="error-detail">
+                    <strong>Detalle del error:</strong>
+                    <p>{result.message}</p>
+                  </div>
                 )}
               </div>
             </div>
           )}
         </div>
 
-        {/* LISTA DE FACTURAS */}
-        <div className="facturas-list-section">
-          <div className="section-header">
-            <h3>Facturas</h3>
-            <p>Certificaciones registradas</p>
-          </div>
-
-          <div className="search-bar-small">
-            <Search size={16} />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {loadingFacturas ? (
-            <div className="loading-small">Cargando...</div>
-          ) : filteredFacturas.length === 0 ? (
-            <div className="empty-state-small">No hay facturas</div>
-          ) : (
-            <div className="facturas-list">
-              {filteredFacturas.map((f) => (
-                <div key={f.idFactura} className="factura-item">
-                  <div className="factura-item-header">
-                    <span className="factura-numero">{f.numeroFactura}</span>
-                    {getStatusBadge(f.estadoCertificacion)}
-                  </div>
-                  <div className="factura-item-body">
-                    <p>{f.nombreCliente}</p>
-                    <p className="factura-total">Q {Number(f.total).toFixed(2)}</p>
-                  </div>
-                  {f.estadoCertificacion === "PENDIENTE" && (
-                    <button
-                      className="btn-certificar-small"
-                      disabled={loading}
-                      onClick={() => certificarFactura(f.idFactura)}
-                    >
-                      <Shield size={14} /> Certificar
-                    </button>
-                  )}
-                  {f.uuidFel && <small className="factura-uuid">UUID: {f.uuidFel.substring(0, 20)}...</small>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )
