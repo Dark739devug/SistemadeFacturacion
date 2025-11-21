@@ -1,0 +1,149 @@
+.emisores-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.emisores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.emisor-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.emisor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.emisor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.emisor-icon {
+  width: 48px;
+  height: 48px;
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
+}
+
+.status-indicator {
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-indicator.active {
+  background-color: #f0fdf4;
+  color: #22c55e;
+}
+
+.status-indicator.inactive {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+.emisor-body {
+  margin-bottom: 1.5rem;
+}
+
+.emisor-body h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+}
+
+.emisor-info p {
+  margin-bottom: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.emisor-info strong {
+  color: var(--foreground);
+}
+
+.email-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.emisor-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.toggle-btn.activate {
+  background-color: #f0fdf4;
+  color: #22c55e;
+  border-color: #22c55e;
+}
+
+.toggle-btn.activate:hover {
+  background-color: #22c55e;
+  color: white;
+}
+
+.toggle-btn.deactivate {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.toggle-btn.deactivate:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--muted-foreground);
+}
+
+.empty-state p {
+  margin-top: 1rem;
+}
+
+textarea {
+  font-family: "Courier New", monospace;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+@media (max-width: 768px) {
+  .emisores-grid {
+    grid-template-columns: 1fr;
+  }
+}
