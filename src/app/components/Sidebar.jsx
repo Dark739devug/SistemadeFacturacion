@@ -20,14 +20,19 @@ export default function Sidebar() {
   }, []);
 
 
-  const navItems = useMemo(() => [
-    { key: 'panel', label: 'Panel', href: '/dashboard', icon: 'home' },
-    { key: 'facturas', label: 'Facturas', href: '/dashboard/facturas', icon: 'invoice' },
-    { key: 'clientes', label: 'Clientes', href: '/dashboard/clientes', icon: 'users' },
-    { key: 'productos', label: 'Productos', href: '/dashboard/productos', icon: 'products' },
-    { key: 'establecimientos', label: 'Establecimientos', href: '/dashboard/establecimientos', icon: 'FaAngry' },
-    {key: 'usuarios', label: 'Usuarios', href: '/dashboard/usuarios', icon: 'users'},
-  ], []);
+  const navItems = useMemo(() => {
+    const allItems = [
+      { key: 'panel', label: 'Panel', href: '/dashboard', icon: 'home', roles: ['Admin', 'Facturación'] },
+      { key: 'facturas', label: 'Facturas', href: '/dashboard/facturas', icon: 'invoice', roles: ['Admin', 'Facturación'] },
+      { key: 'clientes', label: 'Clientes', href: '/dashboard/clientes', icon: 'users', roles: ['Admin', 'Facturación'] },
+      { key: 'productos', label: 'Productos', href: '/dashboard/productos', icon: 'products', roles: ['Admin', 'Facturación'] },
+      { key: 'establecimientos', label: 'Establecimientos', href: '/dashboard/establecimientos', icon: 'FaAngry', roles: ['Admin', 'Facturación'] },
+      { key: 'usuarios', label: 'Usuarios', href: '/dashboard/usuarios', icon: 'users', roles: ['Admin'] },
+    ];
+
+    // Filtrar items según el rol del usuario
+    return allItems.filter(item => item.roles.includes(rol));
+  }, [rol]);
 
   const initialKey = useMemo(() => {
     if (!pathname) return 'panel';
@@ -40,16 +45,32 @@ export default function Sidebar() {
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('nombre');
-      localStorage.removeItem('email');
-      localStorage.removeItem('rol');
-      sessionStorage.clear();
+  const handleLogout = async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (token) {
+        await fetch('http://localhost:9090/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('nombre');
+        localStorage.removeItem('email');
+        localStorage.removeItem('rol');
+        sessionStorage.clear();
+      }
+      router.push('/login');
     }
-    router.push('/login');
   };
 
   const Icon = ({ name }) => {
@@ -201,11 +222,57 @@ export default function Sidebar() {
       {showLogoutConfirm && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox}>
-            <h3>¿Cerrar sesión?</h3>
-            <p>¿Estás seguro que deseas cerrar sesión?</p>
-            <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
-              <button onClick={() => setShowLogoutConfirm(false)}>Cancelar</button>
-              <button onClick={handleLogout}>Cerrar sesión</button>
+            <div style={{textAlign: 'center', marginBottom: '1rem'}}>
+              <svg xmlns="http://www.w3.org/2000/svg" 
+                width="48" 
+                height="48" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="#f59e0b" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                style={{margin: '0 auto'}}
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M12 9v4" />
+                <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" />
+                <path d="M12 16h.01" />
+              </svg>
+            </div>
+            <h3 style={{marginBottom: '0.5rem', fontSize: '1.25rem', fontWeight: '600'}}>¿Cerrar sesión?</h3>
+            <p style={{color: 'var(--muted)', marginBottom: '1.5rem'}}>¿Estás seguro que deseas cerrar sesión?</p>
+            <div style={{display:'flex', gap: '0.5rem', justifyContent:'flex-end'}}>
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  background: 'white',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleLogout}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  background: '#ef4444',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                Cerrar sesión
+              </button>
             </div>
           </div>
         </div>

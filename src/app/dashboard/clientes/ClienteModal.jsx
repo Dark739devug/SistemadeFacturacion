@@ -23,7 +23,7 @@ function normalizeToken(raw) {
     if (parsed.access_token) return parsed.access_token;
     return null;
   } catch {
-    // No es JSON, usar tal cual
+    
   }
   return t;
 }
