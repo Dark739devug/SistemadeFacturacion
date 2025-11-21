@@ -3,27 +3,61 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { Shield, Mail, Lock, User, UserPlus } from "lucide-react"
+import { Lock, User } from "lucide-react"
 import "./Login.css"
 
+// --- LOGO ELEGANTE (SVG Personalizado) ---
+const CustomLogo = () => (
+  <svg 
+    width="90" 
+    height="90" 
+    viewBox="0 0 100 100" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ marginBottom: '2rem', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.3))' }}
+  >
+    <defs>
+      <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+        <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0.4" />
+      </linearGradient>
+    </defs>
+    
+    <path 
+      d="M50 10L85 30V70L50 90L15 70V30L50 10Z" 
+      stroke="url(#logoGradient)" 
+      strokeWidth="1.5" 
+      fill="rgba(255, 255, 255, 0.03)"
+    />
+    
+    <path 
+      d="M35 35H65M35 50H55" 
+      stroke="white" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeOpacity="0.8" 
+    />
+    
+    <circle cx="68" cy="68" r="14" fill="#3b82f6" fillOpacity="0.9" stroke="white" strokeWidth="2" />
+    <path 
+      d="M62 68L66 72L74 62" 
+      stroke="white" 
+      strokeWidth="2.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+    />
+  </svg>
+)
+
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const { login, register } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
 
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
-  })
-
-  const [registerData, setRegisterData] = useState({
-    nombre: "",
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
   })
 
   const handleLoginSubmit = async (e) => {
@@ -41,45 +75,13 @@ const Login = () => {
     setLoading(false)
   }
 
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
-
-    if (registerData.password !== registerData.confirmPassword) {
-      setError("Las contraseñas no coinciden")
-      return
-    }
-
-    setLoading(true)
-    const result = await register({
-      nombre: registerData.nombre,
-      username: registerData.username,
-      email: registerData.email,
-      password: registerData.password,
-    })
-
-    if (result.success) {
-      setError("")
-      setIsLogin(true)
-      setRegisterData({
-        nombre: "",
-        username: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      })
-      alert("Usuario registrado exitosamente. Ahora puedes iniciar sesión.")
-    } else {
-      setError(result.message)
-    }
-    setLoading(false)
-  }
-
   return (
     <div className="login-container">
       <div className="login-left">
         <div className="login-hero">
-          <Shield size={64} strokeWidth={1.5} />
+          
+          <CustomLogo />
+          
           <h1>Sistema Certificadora FEL</h1>
           <p>Certificación de Facturas Electrónicas para Guatemala</p>
 
@@ -112,146 +114,51 @@ const Login = () => {
       <div className="login-right">
         <div className="login-form-container">
           <div className="form-header">
-            <h2>{isLogin ? "Iniciar Sesión" : "Crear Cuenta"}</h2>
-            <p>{isLogin ? "Accede a tu cuenta" : "Regístrate en el sistema"}</p>
+            <h2>Iniciar Sesión</h2>
+            <p>Accede a tu cuenta para continuar</p>
           </div>
 
           {error && <div className="error-message">{error}</div>}
 
-          {isLogin ? (
-            <form onSubmit={handleLoginSubmit}>
-              <div className="form-group">
-                <label htmlFor="username">
-                  <User size={18} />
-                  Usuario
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={loginData.username}
-                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                  placeholder="Ingresa tu usuario"
-                  required
-                />
-              </div>
+          <form onSubmit={handleLoginSubmit}>
+            <div className="form-group">
+              <label htmlFor="username">
+                <User size={18} />
+                Usuario
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={loginData.username}
+                onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                placeholder="Ingresa tu usuario"
+                required
+              />
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="password">
-                  <Lock size={18} />
-                  Contraseña
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={loginData.password}
-                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                  placeholder="Ingresa tu contraseña"
-                  required
-                />
-              </div>
+            <div className="form-group">
+              <label htmlFor="password">
+                <Lock size={18} />
+                Contraseña
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={loginData.password}
+                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                placeholder="Ingresa tu contraseña"
+                required
+              />
+            </div>
 
-              <button type="submit" className="submit-btn" disabled={loading}>
-                {loading ? "Iniciando..." : "Iniciar Sesión"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleRegisterSubmit}>
-              <div className="form-group">
-                <label htmlFor="nombre">
-                  <UserPlus size={18} />
-                  Nombre Completo
-                </label>
-                <input
-                  id="nombre"
-                  type="text"
-                  value={registerData.nombre}
-                  onChange={(e) => setRegisterData({ ...registerData, nombre: e.target.value })}
-                  placeholder="Tu nombre completo"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="reg-username">
-                  <User size={18} />
-                  Usuario
-                </label>
-                <input
-                  id="reg-username"
-                  type="text"
-                  value={registerData.username}
-                  onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
-                  placeholder="Elige un nombre de usuario"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="email">
-                  <Mail size={18} />
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                  placeholder="tu@email.com"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="reg-password">
-                  <Lock size={18} />
-                  Contraseña
-                </label>
-                <input
-                  id="reg-password"
-                  type="password"
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                  placeholder="Mínimo 6 caracteres"
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="confirm-password">
-                  <Lock size={18} />
-                  Confirmar Contraseña
-                </label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  value={registerData.confirmPassword}
-                  onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                  placeholder="Repite tu contraseña"
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <button type="submit" className="submit-btn" disabled={loading}>
-                {loading ? "Registrando..." : "Crear Cuenta"}
-              </button>
-            </form>
-          )}
-
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? "Iniciando..." : "Iniciar Sesión"}
+            </button>
+          </form>
+          
           <div className="form-footer">
-            <p>
-              {isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
-              <button
-                type="button"
-                className="link-btn"
-                onClick={() => {
-                  setIsLogin(!isLogin)
-                  setError("")
-                }}
-              >
-                {isLogin ? "Regístrate" : "Inicia sesión"}
-              </button>
+            <p style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+              © 2024 Certificadora FEL. Todos los derechos reservados.
             </p>
           </div>
         </div>

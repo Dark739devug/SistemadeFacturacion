@@ -1,76 +1,139 @@
+/* =========================================
+   VARIABLES Y TEMA (Colores Profesionales)
+   ========================================= */
+:root {
+  /* Azul Corporativo / Confianza (Certificadora) */
+  --primary: #2563eb; 
+  --primary-hover: #1d4ed8;
+  --primary-foreground: #ffffff;
+
+  /* Fondos y Textos */
+  --background: #ffffff;
+  --foreground: #0f172a; /* Azul muy oscuro casi negro */
+  --muted-foreground: #64748b; /* Gris azulado para textos secundarios */
+  
+  /* Bordes y Inputs */
+  --border: #e2e8f0;
+  --input-bg: #f8fafc;
+  --ring: rgba(37, 99, 235, 0.2); /* Halo azul al hacer focus */
+
+  /* Estados */
+  --error-bg: #fef2f2;
+  --error-text: #dc2626;
+  --error-border: #fecaca;
+  
+  --radius: 0.5rem; /* Bordes redondeados modernos */
+}
+
+/* =========================================
+   LAYOUT PRINCIPAL
+   ========================================= */
 .login-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* =========================================
+   SECCIÓN IZQUIERDA (HERO / BRANDING)
+   ========================================= */
 .login-left {
-  background: linear-gradient(135deg, #171717 0%, #262626 100%);
+  /* Degradado elegante y profundo */
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Patrón de fondo sutil (Opcional, da textura) */
+.login-left::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.03) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .login-hero {
-  max-width: 500px;
-  text-align: center;
+  max-width: 480px;
+  position: relative;
+  z-index: 10;
 }
 
 .login-hero svg {
-  margin-bottom: 1.5rem;
-  opacity: 0.9;
+  margin-bottom: 2rem;
+  opacity: 0.95;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
 }
 
 .login-hero h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 2.75rem;
+  font-weight: 800;
   margin-bottom: 1rem;
-  line-height: 1.2;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(to right, #fff, #cbd5e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .login-hero > p {
-  font-size: 1.125rem;
-  opacity: 0.8;
-  margin-bottom: 3rem;
+  font-size: 1.25rem;
+  color: #94a3b8;
+  margin-bottom: 3.5rem;
+  font-weight: 400;
 }
 
+/* Lista de características */
 .features {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  text-align: left;
+  gap: 2rem;
 }
 
 .feature {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: flex-start;
 }
 
 .feature-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: #60a5fa; /* Un azul claro para el check */
   font-weight: bold;
 }
 
 .feature h3 {
-  font-size: 1.125rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #f1f5f9;
 }
 
 .feature p {
-  opacity: 0.8;
-  font-size: 0.875rem;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
 }
 
+/* =========================================
+   SECCIÓN DERECHA (FORMULARIO)
+   ========================================= */
 .login-right {
   display: flex;
   align-items: center;
@@ -81,36 +144,53 @@
 
 .login-form-container {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .form-header {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  text-align: left;
 }
 
 .form-header h2 {
-  font-size: 1.875rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
   color: var(--foreground);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
 }
 
 .form-header p {
   color: var(--muted-foreground);
+  font-size: 1rem;
 }
 
+/* Mensaje de Error */
 .error-message {
-  background-color: #fee;
-  border: 1px solid var(--error);
-  color: var(--error);
-  padding: 0.75rem 1rem;
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+  padding: 0.875rem 1rem;
   border-radius: var(--radius);
   margin-bottom: 1.5rem;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
 }
 
+/* =========================================
+   ELEMENTOS DEL FORMULARIO
+   ========================================= */
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group label {
@@ -118,31 +198,45 @@
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
   color: var(--foreground);
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+}
+
+.form-group label svg {
+  color: var(--muted-foreground);
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 1rem;
-  transition: all 0.2s;
-  background-color: var(--background);
+  background-color: var(--input-bg);
   color: var(--foreground);
+  transition: all 0.2s ease;
+}
+
+.form-group input:hover {
+  border-color: #cbd5e1;
 }
 
 .form-group input:focus {
   outline: none;
+  background-color: #fff;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0 4px var(--ring);
 }
 
+.form-group input::placeholder {
+  color: #94a3b8;
+}
+
+/* Botón Principal */
 .submit-btn {
   width: 100%;
-  padding: 0.875rem;
+  padding: 1rem;
   background-color: var(--primary);
   color: var(--primary-foreground);
   border: none;
@@ -150,25 +244,34 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 1.5rem;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1);
 }
 
 .submit-btn:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3), 0 4px 6px -2px rgba(37, 99, 235, 0.15);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  opacity: 0.7;
+  cursor: wait;
+  background-color: var(--muted-foreground);
+  box-shadow: none;
 }
 
+/* Footer del Formulario */
 .form-footer {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   text-align: center;
   color: var(--muted-foreground);
-  font-size: 0.875rem;
+  font-size: 0.95rem;
 }
 
 .link-btn {
@@ -177,24 +280,33 @@
   color: var(--primary);
   font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
+  padding: 0 0.25rem;
+  font-size: 0.95rem;
+  transition: color 0.2s;
 }
 
 .link-btn:hover {
-  opacity: 0.8;
+  color: var(--primary-hover);
+  text-decoration: underline;
 }
 
+/* =========================================
+   RESPONSIVE DESIGN
+   ========================================= */
 @media (max-width: 968px) {
   .login-container {
     grid-template-columns: 1fr;
   }
 
   .login-left {
-    display: none;
+    display: none; /* Ocultamos el hero en móviles para enfoque limpio */
   }
 
   .login-right {
-    padding: 1.5rem;
+    background: linear-gradient(180deg, var(--background) 0%, #f8fafc 100%);
+  }
+
+  .login-form-container {
+    padding: 1rem;
   }
 }
