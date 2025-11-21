@@ -18,7 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/emisores")
 @RequiredArgsConstructor
-@Tag(name = "Gestión de Emisores", description = "Endpoints para registrar y configurar emisores (Sincronización con ERP)")
+@Tag(name = "Gestión de Emisores", description = "Endpoints para registrar y configurar emisores")
 @SecurityRequirement(name = "bearer-jwt")
 public class EmisorController {
 
@@ -32,19 +32,23 @@ public class EmisorController {
             Emisor nuevoEmisor = emisorService.registrarEmisor(emisor);
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoEmisor);
         } catch (Exception e) {
+            // Captura si el NIT ya existe
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // ================== READ ==================
     @GetMapping("/{nit}")
-    public ResponseEntity<Emisor> obtenerEmisor(@PathVariable String nit) {
+    @Operation(summary = "Obtener emisor por NIT")
+    public ResponseEntity<Emisor> obtenerEmisor(
+            @Parameter(description = "NIT del emisor sin guiones") @PathVariable String nit) {
         return emisorService.obtenerEmisorPorNit(nit)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
+    @Operation(summary = "Listar todos los emisores")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public ResponseEntity<List<Emisor>> listarTodos() {
         return ResponseEntity.ok(emisorService.listarTodos());
@@ -52,7 +56,10 @@ public class EmisorController {
 
     // ================== UPDATE ==================
     @PutMapping("/{nit}")
-    public ResponseEntity<?> actualizarEmisor(@PathVariable String nit, @Valid @RequestBody Emisor datos) {
+    @Operation(summary = "Actualizar emisor")
+    public ResponseEntity<?> actualizarEmisor(
+            @PathVariable String nit,
+            @Valid @RequestBody Emisor datos) {
         try {
             return ResponseEntity.ok(emisorService.actualizarEmisor(nit, datos));
         } catch (Exception e) {
@@ -60,30 +67,31 @@ public class EmisorController {
         }
     }
 
-    // ================== DELETE (BLINDADO) ==================
+    // ================== DELETE (ARREGLADO) ==================
     @DeleteMapping("/{nit}")
+    @Operation(summary = "Eliminar emisor")
     public ResponseEntity<?> eliminarEmisor(@PathVariable String nit) {
         try {
+            // Si esto falla (por facturas asociadas), el servicio lanza excepción
             emisorService.eliminarEmisor(nit);
             return ResponseEntity.ok("Emisor eliminado correctamente");
         } catch (Exception e) {
-            // Si falla (porque tiene facturas), devuelve un 400 Bad Request con el mensaje claro
-            // Esto evita el Error 500 en el frontend
+            // ¡AQUÍ ATRAPAMOS EL ERROR!
+            // Devolvemos 400 (Bad Request) con el mensaje "No se puede eliminar..."
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // ================== ACTIVAR/DESACTIVAR (ARREGLADO) ==================
-    // Este es el que te daba 500. Ahora atrapa cualquier error.
     @PatchMapping("/{nit}/activo")
-    @Operation(summary = "Cambiar estado activo", description = "Activa o desactiva la capacidad de firmar documentos")
+    @Operation(summary = "Cambiar estado activo")
     public ResponseEntity<?> cambiarEstado(
             @PathVariable String nit,
             @Parameter(description = "true para activar, false para desactivar") @RequestParam boolean activo) {
         try {
             return ResponseEntity.ok(emisorService.cambiarEstadoActivo(nit, activo));
         } catch (Exception e) {
-            // Si el NIT no existe o hay otro problema, devolvemos el error legible
+            // Si el NIT no existe, devolvemos el error claro
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

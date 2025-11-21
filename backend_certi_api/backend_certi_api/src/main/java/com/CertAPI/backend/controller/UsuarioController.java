@@ -1,7 +1,9 @@
 package com.CertAPI.backend.controller;
 
+import com.CertAPI.backend.dto.UsuarioUpdateDTO; // <--- Importante
 import com.CertAPI.backend.model.Usuario;
 import com.CertAPI.backend.repository.UsuarioRepository;
+import com.CertAPI.backend.service.AuthService; // <--- Importante
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,9 +24,10 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioRepository usuarioRepository;
+    private final AuthService authService; // <--- INYECTAR ESTO
 
     @GetMapping("/me")
-    @Operation(summary = "Obtener perfil", description = "Obtiene el perfil del usuario autenticado")
+    @Operation(summary = "Obtener perfil")
     public ResponseEntity<Usuario> obtenerPerfil() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -35,14 +38,23 @@ public class UsuarioController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    @Operation(summary = "Listar usuarios", description = "Lista todos los usuarios (solo admin)")
+    @Operation(summary = "Listar usuarios")
     public ResponseEntity<List<Usuario>> listarUsuarios() {
         return ResponseEntity.ok(usuarioRepository.findAll());
     }
 
+    // ================= NUEVO ENDPOINT PARA EDITAR =================
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @Operation(summary = "Actualizar usuario completo")
+    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Long id, @RequestBody UsuarioUpdateDTO datos) {
+        return ResponseEntity.ok(authService.actualizarUsuario(id, datos));
+    }
+    // ==============================================================
+
     @PutMapping("/{id}/activar")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    @Operation(summary = "Activar usuario", description = "Activa un usuario (solo admin)")
+    @Operation(summary = "Activar usuario")
     public ResponseEntity<Usuario> activarUsuario(@PathVariable Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -52,7 +64,7 @@ public class UsuarioController {
 
     @PutMapping("/{id}/desactivar")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    @Operation(summary = "Desactivar usuario", description = "Desactiva un usuario (solo admin)")
+    @Operation(summary = "Desactivar usuario")
     public ResponseEntity<Usuario> desactivarUsuario(@PathVariable Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));

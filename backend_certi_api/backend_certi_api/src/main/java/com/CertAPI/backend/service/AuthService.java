@@ -3,6 +3,7 @@ package com.CertAPI.backend.service;
 import com.CertAPI.backend.dto.LoginRequestDTO;
 import com.CertAPI.backend.dto.LoginResponseDTO;
 import com.CertAPI.backend.dto.RegisterRequestDTO;
+import com.CertAPI.backend.dto.UsuarioUpdateDTO; // <--- Importante
 import com.CertAPI.backend.exception.BadRequestException;
 import com.CertAPI.backend.exception.ResourceNotFoundException;
 import com.CertAPI.backend.model.LoginSesion;
@@ -64,7 +65,7 @@ public class AuthService {
         return new LoginResponseDTO(
                 token,
                 usuario.getUsername(),
-                usuario.getRol().getNombre(), // nombre del rol
+                usuario.getRol().getNombre(),
                 usuario.getNombreCompleto()
         );
     }
@@ -74,12 +75,9 @@ public class AuthService {
         if (usuarioRepository.existsByUsername(request.getUsername())) {
             throw new BadRequestException("El nombre de usuario ya existe");
         }
-
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException("El email ya está registrado");
         }
-
-        // Buscar el rol por ID
         Rol rol = rolRepository.findById(request.getIdRol())
                 .orElseThrow(() -> new BadRequestException("Rol no encontrado"));
 
@@ -113,5 +111,28 @@ public class AuthService {
         sesion.setActivo(false);
         sesion.setFechaLogout(LocalDateTime.now());
         loginSesionRepository.save(sesion);
+    }
+
+    // ================= NUEVO MÉTODO PARA EDITAR =================
+    @Transactional
+    public Usuario actualizarUsuario(Long id, UsuarioUpdateDTO datos) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        // Actualizamos campos básicos
+        usuario.setNombreCompleto(datos.getNombreCompleto());
+        usuario.setEmail(datos.getEmail());
+
+        // Actualizamos el Rol
+        Rol rol = rolRepository.findById(datos.getIdRol())
+                .orElseThrow(() -> new BadRequestException("Rol no encontrado"));
+        usuario.setRol(rol);
+
+        // Solo actualizamos contraseña si viene algo en el campo
+        if (datos.getPassword() != null && !datos.getPassword().trim().isEmpty()) {
+            usuario.setPasswordHash(passwordEncoder.encode(datos.getPassword()));
+        }
+
+        return usuarioRepository.save(usuario);
     }
 }
