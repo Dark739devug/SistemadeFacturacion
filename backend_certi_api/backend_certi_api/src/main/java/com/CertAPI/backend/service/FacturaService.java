@@ -1,14 +1,14 @@
 package com.CertAPI.backend.service;
 
-import com.CertAPI.backend.dto.DTERequestDTO; // <--- NUEVO IMPORT
-import com.CertAPI.backend.dto.DTEResponseDTO; // <--- NUEVO IMPORT
+import com.CertAPI.backend.dto.DTERequestDTO;
+import com.CertAPI.backend.dto.DTEResponseDTO;
 import com.CertAPI.backend.dto.DetalleFacturaDTO;
 import com.CertAPI.backend.dto.FacturaRequestDTO;
 import com.CertAPI.backend.dto.FacturaResponseDTO;
 import com.CertAPI.backend.exception.BadRequestException;
 import com.CertAPI.backend.exception.ResourceNotFoundException;
 import com.CertAPI.backend.model.DetalleFactura;
-import com.CertAPI.backend.model.Emisor; // <--- NUEVO IMPORT
+import com.CertAPI.backend.model.Emisor;
 import com.CertAPI.backend.model.Factura;
 import com.CertAPI.backend.model.Usuario;
 import com.CertAPI.backend.repository.DetalleFacturaRepository;
@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,11 +33,12 @@ public class FacturaService {
     private final DetalleFacturaRepository detalleFacturaRepository;
     private final UsuarioRepository usuarioRepository;
     private final CertificacionService certificacionService;
-    private final EmisorService emisorService; // <--- AGREGADO (Necesario para el NIT)
+    private final EmisorService emisorService;
 
+    // ================== CREACIÓN ==================
     @Transactional
     public FacturaResponseDTO crearFactura(FacturaRequestDTO request) {
-        Usuario usuario = obtenerUsuarioActual();
+        Usuario usuario = obtenerUsuarioActual(); // <--- OJO: Si esto falla, da 500
 
         if (facturaRepository.existsByNumeroFactura(request.getNumeroFactura())) {
             throw new BadRequestException("El número de factura ya existe");
@@ -59,7 +61,6 @@ public class FacturaService {
 
         factura = facturaRepository.save(factura);
 
-        // Guardar detalles
         for (DetalleFacturaDTO detalleDTO : request.getDetalles()) {
             DetalleFactura detalle = DetalleFactura.builder()
                     .factura(factura)
@@ -74,7 +75,6 @@ public class FacturaService {
                     .build();
             detalleFacturaRepository.save(detalle);
         }
-
         return convertirADTO(factura);
     }
 
@@ -99,83 +99,104 @@ public class FacturaService {
         return facturas.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    // =================================================================
-    // MÉTODO CORREGIDO: Ahora usa certificarDTE en lugar del método borrado
-    // =================================================================
+    // ================== CERTIFICACIÓN (DEBUG MODE) ==================
     @Transactional
-    public FacturaResponseDTO certificarFactura(Long id) {
-        Factura factura = facturaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrada"));
+    public FacturaResponseDTO certificarFactura(Long id, String nitEmisor) {
+        System.out.println("--- INICIANDO CERTIFICACIÓN DEBUG ---");
+        System.out.println("ID Factura: " + id);
+        System.out.println("NIT Emisor Recibido: " + nitEmisor);
 
-        if (!"PENDIENTE".equals(factura.getEstadoCertificacion())) {
-            throw new BadRequestException("La factura ya fue procesada");
+        try {
+            // 1. Buscar factura
+            Factura factura = facturaRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrada en BD"));
+
+            if (!"PENDIENTE".equals(factura.getEstadoCertificacion())) {
+                throw new BadRequestException("La factura ya fue procesada. Estado: " + factura.getEstadoCertificacion());
+            }
+
+            // 2. Validar Emisor
+            if (nitEmisor == null || nitEmisor.isEmpty()) {
+                throw new BadRequestException("El NIT del emisor llegó vacío al servicio.");
+            }
+
+            Emisor emisor = emisorService.obtenerEmisorPorNit(nitEmisor)
+                    .filter(Emisor::getActivo)
+                    .orElseThrow(() -> new BadRequestException("Emisor no encontrado o inactivo: " + nitEmisor));
+
+            // 3. Validar datos clave antes de construir XML (Evitar NullPointer)
+            if (factura.getFechaEmision() == null) throw new BadRequestException("La factura no tiene fecha de emisión.");
+            if (factura.getNombreCliente() == null) throw new BadRequestException("El nombre del cliente es nulo.");
+            if (factura.getTotal() == null) throw new BadRequestException("El total de la factura es nulo.");
+
+            // 4. Construir XML
+            System.out.println("Construyendo XML...");
+            String xml = construirXmlDinamico(factura, emisor);
+            System.out.println("XML Generado: " + xml);
+
+            // 5. Llamar a Certificación
+            DTERequestDTO request = new DTERequestDTO();
+            request.setNitEmisor(emisor.getNitEmisor());
+            request.setXmlDTE(xml);
+
+            System.out.println("Enviando a CertificacionService...");
+            DTEResponseDTO response = certificacionService.certificarDTE(request);
+            System.out.println("Respuesta UUID: " + response.getUuid());
+
+            // 6. Guardar cambios
+            factura.setUuidFel(response.getUuid());
+            factura.setNumeroAutorizacion(response.getNumeroAutorizacion());
+            factura.setFechaCertificacion(response.getFechaCertificacion());
+            factura.setXmlCertificado(response.getXmlCertificado());
+            factura.setEstadoCertificacion("CERTIFICADA");
+
+            factura = facturaRepository.save(factura);
+            return convertirADTO(factura);
+
+        } catch (Exception e) {
+            // ¡AQUÍ ESTÁ LA CLAVE! Imprimimos el error real
+            e.printStackTrace();
+            // Y se lo mandamos al frontend
+            throw new RuntimeException("ERROR FATAL en Certificación: " + e.getMessage());
         }
-
-        // 1. Obtener el Emisor basado en el usuario de la factura
-        // (Asumiendo que el username del usuario es el NIT, como en tu lógica anterior)
-        Emisor emisor = emisorService.obtenerEmisorPorNit(factura.getUsuario().getUsername())
-                .filter(Emisor::getActivo)
-                .orElseThrow(() -> new BadRequestException("El emisor no está registrado o no está activo"));
-
-        // 2. Construir un XML Básico/Mínimo para que pase la validación
-        // NOTA: Idealmente esto debería usar un Builder completo, pero para arreglar
-        // la compilación y que funcione internamente, generamos esto:
-        String xml = construirXmlBasico(factura, emisor);
-
-        // 3. Preparar el Request para el Certificador
-        DTERequestDTO request = new DTERequestDTO();
-        request.setNitEmisor(emisor.getNitEmisor());
-        request.setXmlDTE(xml);
-        // No seteamos firmaElectronica porque el servicio la busca en BD
-
-        // 4. Llamar al servicio nuevo
-        DTEResponseDTO response = certificacionService.certificarDTE(request);
-
-        // 5. Actualizar la factura local
-        factura.setUuidFel(response.getUuid());
-        factura.setNumeroAutorizacion(response.getNumeroAutorizacion());
-        factura.setFechaCertificacion(response.getFechaCertificacion());
-        factura.setEstadoCertificacion("CERTIFICADA");
-
-        // No guardamos XML certificado aquí porque ya está en la tabla DTE,
-        // pero podrías agregarlo si tu entidad Factura tiene ese campo.
-
-        return convertirADTO(factura);
     }
 
     @Transactional
     public void eliminarFactura(Long id) {
         Factura factura = facturaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrada"));
-
         if ("CERTIFICADA".equals(factura.getEstadoCertificacion())) {
             throw new BadRequestException("No se puede eliminar una factura certificada");
         }
-
         factura.setActivo(false);
         facturaRepository.save(factura);
     }
 
+    // ================== UTILIDADES ==================
+
     private Usuario obtenerUsuarioActual() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        return usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                // Para pruebas locales, si no hay usuario, retorna un usuario por defecto si existe
+                // return usuarioRepository.findById(1L).orElseThrow(); // Descomenta si quieres probar sin login
+                throw new BadRequestException("Usuario no autenticado en el contexto de seguridad");
+            }
+            String username = authentication.getName();
+            return usuarioRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado en BD: " + username));
+        } catch (Exception e) {
+            System.err.println("Error obteniendo usuario: " + e.getMessage());
+            throw e;
+        }
     }
 
     private FacturaResponseDTO convertirADTO(Factura factura) {
         List<DetalleFacturaDTO> detallesDTO = detalleFacturaRepository.findByFactura(factura)
                 .stream()
                 .map(d -> new DetalleFacturaDTO(
-                        d.getLinea(),
-                        d.getDescripcion(),
-                        d.getCantidad(),
-                        d.getPrecioUnitario(),
-                        d.getDescuento(),
-                        d.getSubtotal(),
-                        d.getCodigoProducto(),
-                        d.getUnidadMedida()
-                ))
+                        d.getLinea(), d.getDescripcion(), d.getCantidad(), d.getPrecioUnitario(),
+                        d.getDescuento(), d.getSubtotal(), d.getCodigoProducto(), d.getUnidadMedida()))
                 .collect(Collectors.toList());
 
         return FacturaResponseDTO.builder()
@@ -193,29 +214,33 @@ public class FacturaService {
                 .uuidFel(factura.getUuidFel())
                 .numeroAutorizacion(factura.getNumeroAutorizacion())
                 .fechaCertificacion(factura.getFechaCertificacion())
-                .mensajeError(factura.getMensajeError())
-                .detalles(detallesDTO)
-                .usuarioCreador(factura.getUsuario().getUsername())
+                .usuarioCreador(factura.getUsuario() != null ? factura.getUsuario().getUsername() : "N/A")
                 .fechaCreacion(factura.getFechaCreacion())
+                .detalles(detallesDTO)
                 .build();
     }
 
-    // Helper para crear un XML que CertificacionService acepte
-    private String construirXmlBasico(Factura factura, Emisor emisor) {
+    private String construirXmlDinamico(Factura factura, Emisor emisor) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+        // Validación de seguridad
+        String nitCli = (factura.getNitCliente() != null && !factura.getNitCliente().isEmpty())
+                ? factura.getNitCliente() : "CF";
+
         return String.format(
-                "<gte:GTDocumento xmlns:gte=\"http://www.sat.gob.gt/dte/fel/0.2.0\">" +
+                "<gte:GTDocumento xmlns:gte=\"http://www.sat.gob.gt/dte/fel/0.2.0\" Version=\"0.1\">" +
                         "<gte:SAT ClaseDocumento=\"dte\">" +
                         "<gte:DTE ID=\"DatosCertificados\">" +
                         "<gte:DatosEmision ID=\"DatosEmision\">" +
                         "<gte:DatosGenerales Tipo=\"FACT\" FechaHoraEmision=\"%s\" CodigoMoneda=\"GTQ\"/>" +
-                        "<gte:Emisor NITEmisor=\"%s\" NombreEmisor=\"%s\"/>" +
+                        "<gte:Emisor NITEmisor=\"%s\" NombreEmisor=\"%s\" CodigoEstablecimiento=\"1\" AfiliacionIVA=\"GEN\"/>" +
                         "<gte:Receptor IDReceptor=\"%s\" NombreReceptor=\"%s\"/>" +
                         "<gte:Totales><gte:GranTotal>%s</gte:GranTotal></gte:Totales>" +
                         "</gte:DatosEmision></gte:DTE></gte:SAT></gte:GTDocumento>",
-                factura.getFechaEmision().toString(),
+                factura.getFechaEmision().format(formatter),
                 emisor.getNitEmisor(),
                 emisor.getNombreComercial(),
-                factura.getNitCliente() != null ? factura.getNitCliente() : "CF",
+                nitCli,
                 factura.getNombreCliente(),
                 factura.getTotal()
         );

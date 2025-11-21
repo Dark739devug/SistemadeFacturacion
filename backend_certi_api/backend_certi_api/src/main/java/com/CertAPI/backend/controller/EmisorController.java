@@ -26,27 +26,25 @@ public class EmisorController {
 
     // ================== CREATE ==================
     @PostMapping("/registrar")
-    @Operation(summary = "Registrar nuevo emisor",
-            description = "Recibe los datos fiscales y la firma electrónica para habilitar la certificación")
-    public ResponseEntity<Emisor> registrarEmisor(@Valid @RequestBody Emisor emisor) {
-        Emisor nuevoEmisor = emisorService.registrarEmisor(emisor);
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoEmisor);
+    @Operation(summary = "Registrar nuevo emisor")
+    public ResponseEntity<?> registrarEmisor(@Valid @RequestBody Emisor emisor) {
+        try {
+            Emisor nuevoEmisor = emisorService.registrarEmisor(emisor);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoEmisor);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // ================== READ ==================
     @GetMapping("/{nit}")
-    @Operation(summary = "Obtener emisor por NIT", description = "Busca si un emisor existe y retorna sus datos")
-    public ResponseEntity<Emisor> obtenerEmisor(
-            @Parameter(description = "NIT del emisor sin guiones") @PathVariable String nit) {
-
+    public ResponseEntity<Emisor> obtenerEmisor(@PathVariable String nit) {
         return emisorService.obtenerEmisorPorNit(nit)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    @Operation(summary = "Listar todos los emisores", description = "Devuelve la lista completa de emisores registrados")
-    // CORRECCIÓN AQUÍ: Cambiado de hasRole a hasAuthority('SCOPE_ADMIN') para que coincida con tu token JWT
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public ResponseEntity<List<Emisor>> listarTodos() {
         return ResponseEntity.ok(emisorService.listarTodos());
@@ -54,27 +52,39 @@ public class EmisorController {
 
     // ================== UPDATE ==================
     @PutMapping("/{nit}")
-    @Operation(summary = "Actualizar emisor", description = "Actualiza datos de contacto o renueva la firma electrónica")
-    public ResponseEntity<Emisor> actualizarEmisor(
-            @PathVariable String nit,
-            @Valid @RequestBody Emisor datos) {
-        return ResponseEntity.ok(emisorService.actualizarEmisor(nit, datos));
+    public ResponseEntity<?> actualizarEmisor(@PathVariable String nit, @Valid @RequestBody Emisor datos) {
+        try {
+            return ResponseEntity.ok(emisorService.actualizarEmisor(nit, datos));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    // ================== DELETE ==================
+    // ================== DELETE (BLINDADO) ==================
     @DeleteMapping("/{nit}")
-    @Operation(summary = "Eliminar emisor", description = "Elimina un emisor del sistema de certificación")
-    public ResponseEntity<String> eliminarEmisor(@PathVariable String nit) {
-        emisorService.eliminarEmisor(nit);
-        return ResponseEntity.ok("Emisor eliminado correctamente");
+    public ResponseEntity<?> eliminarEmisor(@PathVariable String nit) {
+        try {
+            emisorService.eliminarEmisor(nit);
+            return ResponseEntity.ok("Emisor eliminado correctamente");
+        } catch (Exception e) {
+            // Si falla (porque tiene facturas), devuelve un 400 Bad Request con el mensaje claro
+            // Esto evita el Error 500 en el frontend
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    // ================== ACTIVAR/DESACTIVAR ==================
+    // ================== ACTIVAR/DESACTIVAR (ARREGLADO) ==================
+    // Este es el que te daba 500. Ahora atrapa cualquier error.
     @PatchMapping("/{nit}/activo")
     @Operation(summary = "Cambiar estado activo", description = "Activa o desactiva la capacidad de firmar documentos")
-    public ResponseEntity<Emisor> cambiarEstado(
+    public ResponseEntity<?> cambiarEstado(
             @PathVariable String nit,
             @Parameter(description = "true para activar, false para desactivar") @RequestParam boolean activo) {
-        return ResponseEntity.ok(emisorService.cambiarEstadoActivo(nit, activo));
+        try {
+            return ResponseEntity.ok(emisorService.cambiarEstadoActivo(nit, activo));
+        } catch (Exception e) {
+            // Si el NIT no existe o hay otro problema, devolvemos el error legible
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
