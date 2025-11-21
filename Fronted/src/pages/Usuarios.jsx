@@ -2,16 +2,21 @@
 
 import { useState, useEffect } from "react"
 import api from "../services/api"
-import { Search, Users, UserCheck, UserX, Pencil, Trash2, X, UserPlus } from "lucide-react"
+import { Search, Users, UserCheck, UserX, Pencil, Trash2, X, UserPlus, Filter } from "lucide-react" // Agregué Filter
 import "./Usuarios.css"
 
 const Usuarios = () => {
   const [usuarios, setUsuarios] = useState([])
   const [roles, setRoles] = useState([])
   const [loading, setLoading] = useState(true)
+  
+  // Estados para filtros
   const [searchTerm, setSearchTerm] = useState("")
+  const [filterStatus, setFilterStatus] = useState("all") // "all", "active", "inactive"
+
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -42,8 +47,6 @@ const Usuarios = () => {
       setRoles(response.data)
     } catch (error) {
       console.error("Error cargando roles:", error)
-
-      // fallback
       setRoles([
         { id: 1, nombre: "ADMIN" },
         { id: 2, nombre: "USER" },
@@ -59,7 +62,7 @@ const Usuarios = () => {
   const handleEdit = (usuario) => {
     setFormData({
       username: usuario.username,
-      password: "",
+      password: "", // Se deja vacía intencionalmente al editar
       nombreCompleto: usuario.nombreCompleto,
       email: usuario.email,
       idRol: usuario.rol?.id || usuario.rol?.idRol || 2,
@@ -74,14 +77,21 @@ const Usuarios = () => {
 
     try {
       if (editingId) {
+        // --- LÓGICA DE EDICIÓN ---
         const dataToSend = {
           nombreCompleto: formData.nombreCompleto,
           email: formData.email,
           idRol: formData.idRol,
         }
+        
+        // Solo enviamos la contraseña si el usuario escribió algo nuevo
+        if (formData.password && formData.password.trim() !== "") {
+            dataToSend.password = formData.password;
+        }
 
         await api.put(`/usuarios/${editingId}`, dataToSend)
       } else {
+        // --- LÓGICA DE CREACIÓN ---
         const dataToSend = {
           username: formData.username,
           password: formData.password,
@@ -135,12 +145,24 @@ const Usuarios = () => {
     }
   }
 
-  const filteredUsuarios = usuarios.filter(
-    (u) =>
+  // --- LÓGICA DE FILTRADO COMBINADO (Búsqueda + Estado) ---
+  const filteredUsuarios = usuarios.filter((u) => {
+    // 1. Filtro de texto
+    const matchesSearch = 
       u.nombreCompleto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // 2. Filtro de estado (Activo/Inactivo)
+    let matchesStatus = true;
+    if (filterStatus === "active") {
+        matchesStatus = u.activo === true;
+    } else if (filterStatus === "inactive") {
+        matchesStatus = u.activo === false;
+    }
+
+    return matchesSearch && matchesStatus;
+  })
 
   return (
     <div className="usuarios-page">
@@ -156,14 +178,37 @@ const Usuarios = () => {
         </button>
       </div>
 
-      <div className="search-bar">
-        <Search size={20} />
-        <input
-          type="text"
-          placeholder="Buscar por nombre, usuario o email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* BARRA DE HERRAMIENTAS (Búsqueda + Filtro) */}
+      <div className="toolbar" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <div className="search-bar" style={{ flex: 1 }}>
+          <Search size={20} />
+          <input
+            type="text"
+            placeholder="Buscar por nombre, usuario o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        {/* SELECTOR DE FILTRO DE ESTADO */}
+        <div className="filter-select-container" style={{ position: 'relative' }}>
+            <Filter size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#666' }}/>
+            <select 
+                value={filterStatus} 
+                onChange={(e) => setFilterStatus(e.target.value)}
+                style={{ 
+                    padding: '10px 10px 10px 35px', 
+                    borderRadius: '8px', 
+                    border: '1px solid #ddd',
+                    cursor: 'pointer',
+                    height: '100%'
+                }}
+            >
+                <option value="all">Todos los estados</option>
+                <option value="active">Solo Activos</option>
+                <option value="inactive">Solo Inactivos</option>
+            </select>
+        </div>
       </div>
 
       {loading ? (
@@ -173,7 +218,7 @@ const Usuarios = () => {
           {filteredUsuarios.length === 0 ? (
             <div className="empty-state">
               <Users size={48} style={{ opacity: 0.3 }} />
-              <p>No se encontraron usuarios</p>
+              <p>No se encontraron usuarios con esos criterios</p>
             </div>
           ) : (
             filteredUsuarios.map((usuario) => (
@@ -206,13 +251,11 @@ const Usuarios = () => {
                   >
                     {usuario.activo ? (
                       <>
-                        <UserX size={16} />
-                        Desactivar
+                        <UserX size={16} /> Desactivar
                       </>
                     ) : (
                       <>
-                        <UserCheck size={16} />
-                        Activar
+                        <UserCheck size={16} /> Activar
                       </>
                     )}
                   </button>
@@ -270,19 +313,21 @@ const Usuarios = () => {
                 </div>
               )}
 
-              {!editingId && (
-                <div className="form-group">
-                  <label>Contraseña *</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Mínimo 6 caracteres"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              )}
+              {/* CAMBIO AQUÍ: El input de contraseña ahora se muestra SIEMPRE */}
+              <div className="form-group">
+                <label>
+                    {editingId ? "Nueva Contraseña" : "Contraseña *"}
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder={editingId ? "Dejar en blanco para mantener la actual" : "Mínimo 6 caracteres"}
+                  // CAMBIO AQUÍ: Solo es 'required' si NO estamos editando
+                  required={!editingId} 
+                  minLength={6}
+                />
+              </div>
 
               <div className="form-group">
                 <label>Nombre Completo *</label>
