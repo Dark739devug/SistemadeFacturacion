@@ -22,7 +22,7 @@ const Usuarios = () => {
     password: "",
     nombreCompleto: "",
     email: "",
-    idRol: 2,
+    idRol: 1,
   })
 
   useEffect(() => {
