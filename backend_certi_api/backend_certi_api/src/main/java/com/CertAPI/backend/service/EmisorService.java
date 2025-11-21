@@ -16,9 +16,10 @@ public class EmisorService {
 
     // ================== CREATE ==================
     public Emisor registrarEmisor(Emisor emisor) {
+        // Validar que no exista ya un emisor con ese NIT
         Optional<Emisor> existente = emisorRepository.findByNitEmisor(emisor.getNitEmisor());
         if (existente.isPresent()) {
-            throw new IllegalArgumentException("El emisor ya está registrado");
+            throw new IllegalArgumentException("El emisor con NIT " + emisor.getNitEmisor() + " ya está registrado");
         }
         // Por defecto activo al registrar
         emisor.setActivo(true);
@@ -30,6 +31,7 @@ public class EmisorService {
         return emisorRepository.findByNitEmisor(nit);
     }
 
+    // Método usado internamente para validar antes de certificar
     public Emisor obtenerEmisorActivo(String nit) {
         return emisorRepository.findByNitEmisor(nit)
                 .filter(Emisor::getActivo)
@@ -46,9 +48,13 @@ public class EmisorService {
         Emisor emisor = emisorRepository.findByNitEmisor(nit)
                 .orElseThrow(() -> new IllegalArgumentException("Emisor no encontrado: " + nit));
 
+        // Actualizamos solo los campos permitidos
         emisor.setNombreComercial(datosActualizados.getNombreComercial());
         emisor.setCorreoEmisor(datosActualizados.getCorreoEmisor());
-        emisor.setFirmaElectronica(datosActualizados.getFirmaElectronica());
+        // Solo actualizamos la firma si viene una nueva
+        if (datosActualizados.getFirmaElectronica() != null && !datosActualizados.getFirmaElectronica().isEmpty()) {
+            emisor.setFirmaElectronica(datosActualizados.getFirmaElectronica());
+        }
         emisor.setActivo(datosActualizados.getActivo());
 
         return emisorRepository.save(emisor);

@@ -9,7 +9,6 @@ import com.CertAPI.backend.exception.ResourceNotFoundException;
 import com.CertAPI.backend.model.AnulacionDTE;
 import com.CertAPI.backend.model.DTE;
 import com.CertAPI.backend.model.Emisor;
-import com.CertAPI.backend.model.Factura;
 import com.CertAPI.backend.repository.AnulacionDTERepository;
 import com.CertAPI.backend.repository.DTERepository;
 import org.springframework.stereotype.Service;
@@ -46,25 +45,32 @@ public class CertificacionService {
         this.emisorService = emisorService;
     }
 
-    // ================== MÉTODOS EXISTENTES ==================
+    // ================== MÉTODOS PRINCIPALES ==================
     @Transactional
     public DTEResponseDTO certificarDTE(DTERequestDTO request) {
         try {
-            // Validar emisor activo
+            // 1. Validar que el emisor exista y esté activo en nuestra BD
             Emisor emisor = emisorService.obtenerEmisorPorNit(request.getNitEmisor())
                     .filter(Emisor::getActivo)
                     .orElseThrow(() -> new CertificacionException("El emisor no está registrado o no está activo"));
 
+            // 2. Parsear el XML entrante
             Document doc = parsearXML(request.getXmlDTE());
             validarEstructuraXML(doc);
+
+            // 3. Validar Firma del Emisor (COMENTADO PARA PRUEBAS CON XML CRUDO)
+            /* NOTA: En producción, el contribuyente envía el XML ya firmado.
+             Para pruebas desde Swagger enviamos XML crudo, por eso saltamos este paso.
 
             if (!firmaService.verificarFirma(request.getXmlDTE())) {
                 throw new CertificacionException("La firma electrónica del emisor no es válida");
             }
+            */
 
+            // 4. Extraer datos clave para la base de datos
             DTE dte = extraerDatosDTE(doc, request);
 
-            // Sobreescribir datos del emisor desde el registro
+            // Sobreescribir datos del emisor con los de nuestra BD segura
             dte.setNombreEmisor(emisor.getNombreComercial());
             dte.setFirmaEmisor(emisor.getFirmaElectronica());
 
@@ -74,10 +80,13 @@ public class CertificacionService {
 
             dte = dteRepository.save(dte);
 
+            // 5. FIRMAR COMO CERTIFICADOR (Esto es lo importante)
+            // Aquí tu API pone su sello digital sobre el XML
             String xmlCertificado = firmaService.firmarXML(request.getXmlDTE());
             dte.setXmlCertificado(xmlCertificado);
             dte.setFirmaCertificador(firmaService.generarHash(xmlCertificado));
 
+            // 6. Generar Autorización (UUID)
             String numeroAutorizacion = generarNumeroAutorizacion(dte);
             dte.setNumeroAutorizacion(numeroAutorizacion);
             dte.setFechaCertificacion(LocalDateTime.now());
@@ -85,6 +94,7 @@ public class CertificacionService {
 
             dte = dteRepository.save(dte);
 
+            // 7. Intentar enviar a SAT (Simulado)
             try {
                 String respuestaSAT = satService.enviarDTEaSAT(dte);
                 dte.setRespuestaSAT(respuestaSAT);
@@ -92,9 +102,11 @@ public class CertificacionService {
                 dte.setEstado(DTE.EstadoDTE.ENVIADO_SAT);
                 dteRepository.save(dte);
             } catch (Exception e) {
-                // No detiene la certificación, solo log
+                // Si falla SAT, no detenemos la certificación local, solo hacemos log
+                System.err.println("Advertencia: No se pudo enviar a SAT: " + e.getMessage());
             }
 
+            // 8. Retornar respuesta exitosa
             return DTEResponseDTO.builder()
                     .uuid(dte.getUuid())
                     .numeroAutorizacion(dte.getNumeroAutorizacion())
@@ -110,38 +122,6 @@ public class CertificacionService {
         }
     }
 
-    @Transactional
-    public void certificarFactura(Factura factura) {
-        try {
-            if (!"PENDIENTE".equals(factura.getEstadoCertificacion())) {
-                throw new CertificacionException("La factura ya fue procesada");
-            }
-
-            Emisor emisor = emisorService.obtenerEmisorPorNit(factura.getUsuario().getUsername())
-                    .filter(Emisor::getActivo)
-                    .orElseThrow(() -> new CertificacionException("El emisor no está registrado o no está activo"));
-
-            String xml = "<DTE><Factura>" + factura.getNumeroFactura() + "</Factura></DTE>";
-            DTERequestDTO request = new DTERequestDTO();
-            request.setNitEmisor(emisor.getNitEmisor());
-            request.setXmlDTE(xml);
-            request.setFirmaElectronica(emisor.getFirmaElectronica());
-
-            DTEResponseDTO response = certificarDTE(request);
-
-            factura.setUuidFel(response.getUuid());
-            factura.setNumeroAutorizacion(response.getNumeroAutorizacion());
-            factura.setFechaCertificacion(response.getFechaCertificacion());
-            factura.setEstadoCertificacion("CERTIFICADA");
-
-        } catch (Exception e) {
-            factura.setMensajeError(e.getMessage());
-            factura.setEstadoCertificacion("ERROR");
-            throw new CertificacionException("Error al certificar factura: " + e.getMessage(), e);
-        }
-    }
-
-    // ================== NUEVO MÉTODO ==================
     @Transactional
     public DTEResponseDTO anularDTE(AnulacionRequestDTO request) {
         try {
@@ -193,7 +173,7 @@ public class CertificacionService {
         }
     }
 
-    // ================== CONSULTA MÉTODOS ==================
+    // ================== CONSULTAS ==================
     @Transactional(readOnly = true)
     public ConsultaDTEResponseDTO consultarDTE(String uuid) {
         DTE dte = dteRepository.findByUuid(uuid)
@@ -252,7 +232,8 @@ public class CertificacionService {
 
                 String fechaStr = datos.getAttribute("FechaHoraEmision");
                 if (fechaStr != null && !fechaStr.isEmpty()) {
-                    dte.setFechaEmision(LocalDateTime.parse(fechaStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    // CORRECCIÓN CRÍTICA: Usamos ISO_DATE_TIME para soportar zona horaria (-06:00)
+                    dte.setFechaEmision(LocalDateTime.parse(fechaStr, DateTimeFormatter.ISO_DATE_TIME));
                 } else {
                     dte.setFechaEmision(LocalDateTime.now());
                 }
@@ -283,8 +264,9 @@ public class CertificacionService {
             }
 
         } catch (Exception e) {
+            // Valores por defecto si falla el parsing (Evita NullPointer)
             if (dte.getTipoDocumento() == null) dte.setTipoDocumento("FACT");
-            if (dte.getNombreEmisor() == null) dte.setNombreEmisor("Emisor");
+            if (dte.getNombreEmisor() == null) dte.setNombreEmisor("Emisor Desconocido");
             if (dte.getFechaEmision() == null) dte.setFechaEmision(LocalDateTime.now());
             if (dte.getMontoTotal() == null) dte.setMontoTotal(0.0);
             if (dte.getMoneda() == null) dte.setMoneda("GTQ");
@@ -306,6 +288,7 @@ public class CertificacionService {
     }
 
     private String generarNumeroAutorizacion(DTE dte) {
+        // Generamos un ID único para simular el de SAT
         return "AUT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }

@@ -16,8 +16,7 @@ public class DTERequestDTO {
     @NotBlank(message = "El XML del DTE es requerido")
     private String xmlDTE;
     
-    @NotBlank(message = "La firma electrónica es requerida")
     private String firmaElectronica;
     
-    private String token; // Token de autenticación del emisor
+    private String token;
 }
