@@ -130,8 +130,8 @@ export default function CrearAgencia() {
   return (
     <div className={styles.pageWrap}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Crear Agencia Virtual</h1>
-        <p className={styles.subtitle}>Completa los datos para crear tu Agencia Virtual</p>
+        <h1 className={styles.title}>Crear Usuario</h1>
+        <p className={styles.subtitle}>Completa los datos para crear un Usuario</p>
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <div className={styles.row}>

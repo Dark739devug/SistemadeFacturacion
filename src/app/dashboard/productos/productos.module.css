@@ -10,7 +10,13 @@
   padding:20px 0px; 
 }
 
-.header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.header{ 
+  display:flex; 
+  justify-content:space-between; 
+  align-items:center; 
+  margin-bottom:18px; 
+}
+
 .header h1{ margin:0; color:#0f1724; font-size:2.25rem; font-weight:800; }
 .addBtn{ background:#3396D3; color:#fff; border:none; padding:10px 16px; border-radius:999px; cursor:pointer; font-weight:700; box-shadow:0 8px 20px rgba(129,231,175,0.18); transition:transform .12s ease, box-shadow .12s ease; }
 .addBtn:hover{ transform: translateY(-2px); box-shadow:0 12px 30px rgba(129,231,175,0.22); }
@@ -38,31 +44,61 @@
 @media (max-width: 768px){ .search{ width:100%; padding-left:38px; } }
 .filterSelect{ padding:10px 12px; border-radius:8px; border:1px solid #e6e9ee; background:#fff; color:#0f1724; cursor:pointer; }
 .filterSelect:focus{ outline:2px solid rgba(77,168,218,0.18); }
-.tableWrap{ background:#fff; border-radius:10px; padding:12px; box-shadow:0 6px 18px rgba(2,6,23,0.04); }
+
+.tableWrap{ 
+  background:#fff; 
+  border-radius:10px; 
+  padding:12px; 
+  box-shadow:0 6px 18px rgba(2,6,23,0.04); 
+  overflow:hidden; }
 
 .table{ 
   width:100%; 
   border-collapse:collapse; 
+   font-size:0.9rem;
 }
 
-.table{ width:100%; border-collapse:collapse; /* make table font slightly smaller for compactness */ font-size:0.9rem; }
-.table th{ text-align:left; font-weight:700; padding:12px 8px; color:#475569; font-size:0.85rem; border-bottom:1px solid #eef2f7; }
-.table td{ font-size:0.79rem; }
-.tableWrap{ overflow:hidden; }
+.table th{ 
+  text-align:left; 
+  font-weight:700; 
+  padding:12px 8px; 
+  color:#475569; 
+  font-size:0.85rem; 
+  border-bottom:1px solid #eef2f7; 
+}
+
+
+.table td{ 
+  font-size:0.79rem; 
+  white-space: nowrap;
+  padding:12px 8px;
+  border-bottom:1px solid #f3f6f9; 
+  color:#0f1724; 
+  vertical-align:middle;
+}
+
 
 /* Estilos para el encabezado de la tabla */
 .table thead tr{
   /* Color de fondo del encabezado de la tabla */
-  background: #309898;
+  background: #3396D3;
   box-shadow: 0 8px 20px rgba(77,168,218,0.12);
 }
-.table thead th:first-child{ border-top-left-radius:10px; }
-.table thead th:last-child{ border-top-right-radius:10px; }
-.table thead th{ border-bottom:none; color: #ffffff; }
-.table thead th{ padding:14px 8px; }
-.table td{ padding:12px 8px; border-bottom:1px solid #f3f6f9; color:#0f1724; vertical-align:middle; }
+.table thead th:first-child{ 
+  border-top-left-radius:10px; 
+}
+
+.table thead th:last-child{ 
+  border-top-right-radius:10px; 
+}
+.table thead th{ 
+  border-bottom:none; color: #ffffff; 
+}
+.table thead th{ 
+  padding:14px 8px; 
+}
+
 .table th:last-child, .table td:last-child { text-align:center; }
-.table td { white-space: nowrap; }
 .empty{ text-align:center; padding:28px; color:#64748b; }
 .nameCol{ font-weight:600; color:#0b3a66; font-size:0.95rem; }
 .stockCol {
@@ -133,11 +169,45 @@
   font-size: 0.95rem;
   color: #334155;
 }
-.actionsCol{ display:flex; gap:8px; justify-content:center; align-items:center; }
-.iconBtn{ background:transparent; border:1px solid #e6e9ee; padding:6px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
-.iconBtn svg{ width:16px; height:16px; display:block; }
-.iconBtnDanger{ background:transparent; border:1px solid #ffd1d1; color:#dc2626; padding:6px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
-.iconBtnDanger svg{ width:16px; height:16px; display:block; }
+.actionsCol{ 
+  display:flex; 
+  gap:8px; 
+  justify-content:center; 
+  align-items:center; 
+}
+
+.iconBtn{ 
+  background:transparent; 
+  border:1px solid #e6e9ee; 
+  padding:6px; border-radius:6px; 
+  cursor:pointer; 
+  display:inline-flex; 
+  align-items:center; 
+  justify-content:center; 
+}
+
+.iconBtn svg{ 
+  width:16px; 
+  height:16px; 
+  display:block; 
+}
+
+.iconBtnDanger{ 
+  background:transparent; 
+  border:1px solid #ffd1d1; 
+  color:#dc2626; 
+  padding:6px; 
+  border-radius:6px; 
+  cursor:pointer; 
+  display:inline-flex; 
+  align-items:center; 
+  justify-content:center; 
+}
+.iconBtnDanger svg{ 
+  width:16px; 
+  height:16px; 
+  display:block; 
+}
 
 /* Botones de acción con caja y color (reutilizables en Productos) */
 .actionBtn, .actionBtnDanger{
@@ -153,8 +223,15 @@
   box-shadow: 0 8px 18px rgba(2,6,23,0.06);
   transition: transform .12s ease, box-shadow .12s ease;
 }
-.actionBtn:hover, .actionBtnDanger:hover{ transform: translateY(-2px); box-shadow: 0 12px 28px rgba(2,6,23,0.08); }
-.actionBtn:focus, .actionBtnDanger:focus{ outline: 3px solid rgba(59,130,246,0.18); }
+
+.actionBtn:hover, .actionBtnDanger:hover{ 
+  transform: translateY(-2px); 
+  box-shadow: 0 12px 28px rgba(2,6,23,0.08); 
+}
+
+.actionBtn:focus, .actionBtnDanger:focus{ 
+  outline: 3px solid rgba(59,130,246,0.22);
+}
 
 .actionBtn{ background: linear-gradient(90deg,#e6f5ff,#d6ebff); }
 .actionBtn svg{ stroke:#0b2a4a; }
@@ -261,11 +338,45 @@
   max-height: calc(100vh - 96px);
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
-.modalHeader{ display:flex; align-items:center; justify-content:space-between; padding:20px 18px; border-bottom: none; }
-.modalHeader h3{ margin:0; font-size:1.60rem; color:#ffffff; font-weight:700; letter-spacing:0.2px; }
-.modalHeader{ background-color: #1B3C53; }
-.modalCloseBtn{ background: rgba(255,255,255,0.12); border:none; font-size:20px; line-height:1; cursor:pointer; color:#ffffff; padding:6px; border-radius:8px; transition: background .18s ease, transform .12s ease; }
-.modalCloseBtn:hover{ background: rgba(255,255,255,0.18); transform: translateY(-1px); }
+.modalHeader{
+  background: linear-gradient(90deg, #1B3C53, #1363a8);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 18px;
+  border-bottom: none;
+}
+
+.modalHeader h3{
+  margin: 0;
+  font-size: 1.60rem;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.modalCloseBtn{
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  line-height: 1;
+  transition: background 0.2s ease, transform 0.12s ease;
+  padding: 0;
+}
+
+.modalCloseBtn:hover{
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
 .modalBody{ padding:18px 20px; display:flex; flex-direction:column; gap:14px; overflow:auto; }
 
 /* Grid para el formulario del modal: dos columnas para campos, descripción full-width */

@@ -104,15 +104,25 @@
 }
 
 .table thead tr{ 
-  background:#3396D3; 
+  background: #3396D3;
+  box-shadow: 0 8px 20px rgba(77,168,218,0.12);
+}
+
+.table thead th:first-child{ 
+  border-top-left-radius:10px; 
+}
+
+.table thead th:last-child{ 
+  border-top-right-radius:10px; 
 }
 
 .table th{ 
   text-align:left; 
-  padding:12px 8px; 
-  color:#fff; 
+  padding:14px 8px; 
+  color:#ffffff; 
   font-weight:700; 
-  font-size:0.72rem; 
+  font-size:0.85rem;
+  border-bottom:none;
 }
 
 .table td{ 

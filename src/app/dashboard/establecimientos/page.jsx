@@ -227,12 +227,12 @@ export default function EstablecimientosPage() {
         activoCertificador: !!i.activoCertificador,
         activo: typeof i.activo === 'undefined' ? true : !!i.activo
       }));
-      // Ordenar por id ascendente, manejando nulos al final
+      // Ordenar por id descendente (más reciente primero), manejando nulos al final
       const sorted = mapped.slice().sort((a, b) => {
         if (a.id == null && b.id == null) return 0;
         if (a.id == null) return 1;
         if (b.id == null) return -1;
-        return Number(a.id) - Number(b.id);
+        return Number(b.id) - Number(a.id);
       });
       setEstablecimientos(sorted);
     } catch (e) {
@@ -282,10 +282,47 @@ export default function EstablecimientosPage() {
         const txt = await res.text();
         throw new Error(txt || `HTTP ${res.status}`);
       }
+
+      // Intentar parsear la respuesta para obtener el establecimiento creado
+      let created = null;
+      try { created = await res.json(); } catch (e) { /* no json - ignorar */ }
+
       toast.success('Establecimiento creado');
       setMostrarCrear(false);
       setNuevoEstablecimiento({ nit:'', nombreComercial:'', razonSocial:'', direccion:'', municipio:'', departamento:'', codigoPostal:'', telefono:'', email:'', codigoEstablecimiento:'', activoCertificador:false, activo:true });
-      await fetchEstablecimientos();
+
+      // Si la API devolvió el objeto creado, normalizarlo y preprenderlo al estado
+      if (created && (typeof created === 'object')) {
+        const mapped = {
+          id: created.idEstablecimiento ?? created.id ?? null,
+          nit: created.nit ?? created.NIT ?? '',
+          nombreComercial: created.nombreComercial ?? created.nombre ?? '',
+          razonSocial: created.razonSocial ?? created.razon_social ?? '',
+          direccion: created.direccion ?? '',
+          municipio: created.municipio ?? '',
+          departamento: created.departamento ?? '',
+          codigoPostal: created.codigoPostal ?? created.codigo_postal ?? '',
+          telefono: created.telefono ?? '',
+          email: created.email ?? created.correo ?? '',
+          codigoEstablecimiento: created.codigoEstablecimiento ?? created.codigoEstablecimiento ?? '',
+          activoCertificador: !!created.activoCertificador,
+          activo: typeof created.activo === 'undefined' ? true : !!created.activo
+        };
+
+        setEstablecimientos(prev => {
+          // eliminar cualquier duplicado con el mismo id (si existe)
+          const filtered = prev.filter(it => !(mapped.id != null && it.id === mapped.id));
+          return [mapped, ...filtered];
+        });
+
+        setPagina(1); // Ir a la primera página para ver el nuevo establecimiento
+        // refrescar en segundo plano para obtener la lista oficial y evitar inconsistencias
+        fetchEstablecimientos().catch(err => console.warn('Refetch tras crear falló', err));
+      } else {
+        // si no hubo objeto en la respuesta, recargar la lista para ubicar el nuevo registro
+        setPagina(1);
+        await fetchEstablecimientos();
+      }
     } catch (e) {
       console.error('Error crear establecimiento', e);
       toast.error('No se pudo crear establecimiento');
@@ -293,7 +330,7 @@ export default function EstablecimientosPage() {
   }
 
   async function abrirEditar(est) {
-    // Solo admins pueden editar desde UI — doble check por seguridad
+    // Solo admins pueden editar desde UI 
     if (Number(userRole) !== 1) { toast.error('No autorizado'); return; }
     setEstablecimientoEditar({ ...est });
     setMostrarEditar(true);
@@ -362,7 +399,7 @@ export default function EstablecimientosPage() {
           if (a.id == null && b.id == null) return 0;
           if (a.id == null) return 1;
           if (b.id == null) return -1;
-          return Number(a.id) - Number(b.id);
+          return Number(b.id) - Number(a.id);
         });
         return next;
       });
@@ -442,13 +479,11 @@ export default function EstablecimientosPage() {
         <table className={styles.tabla}>
           <thead>
             <tr>
-              <th>No</th>
               <th>NIT</th>
               <th>Nombre Comercial</th>
               <th>Razón Social</th>
               <th>Teléfono</th>
               <th>Codigo Postal</th>
-              <th>Email</th>
               <th>Departamento</th>
               <th>Codigo Establecimiento</th>
               <th>Certificador</th>
@@ -458,19 +493,17 @@ export default function EstablecimientosPage() {
           </thead>
           <tbody>
             {cargando ? (
-              <tr><td colSpan={Number(userRole) === 1 ? 12 : 11} className={styles.cargando}>Cargando...</td></tr>
+              <tr><td colSpan={Number(userRole) === 1 ? 10 : 9} className={styles.cargando}>Cargando...</td></tr>
             ) : itemsPagina.length === 0 ? (
-              <tr><td colSpan={Number(userRole) === 1 ? 12 : 11} className={styles.empty}>No hay establecimientos</td></tr>
+              <tr><td colSpan={Number(userRole) === 1 ? 10 : 9} className={styles.empty}>No hay establecimientos</td></tr>
             ) : (
               itemsPagina.map(est => (
                 <tr key={est.id ?? est.codigoEstablecimiento}>
-                  <td>{est.id ?? '-'}</td>
                   <td>{est.nit || '-'}</td>
                   <td className={styles.nombreComercial}>{est.nombreComercial || '-'}</td>
                   <td>{est.razonSocial || '-'}</td>
                   <td>{est.telefono || '-'}</td>
                   <td>{est.codigoPostal || '-'}</td>
-                  <td>{est.email || '-'}</td>
                   <td>{est.departamento || '-'}</td>
                   <td>{est.codigoEstablecimiento || '-'}</td>
                   <td><span className={`${styles.badge} ${est.activoCertificador ? styles.activo : styles.inactivo}`}>{est.activoCertificador ? 'Activo' : 'Inactivo'}</span></td>

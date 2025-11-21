@@ -224,13 +224,11 @@ export default function UsuariosPage() {
                           className={styles.btnEditar}
                           onClick={() => abrirModalEditar(usuario)}
                           title="Editar usuario"
-                          
                         >
-                          <svg width={18} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#0b2a4a" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                            <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" fill="none" />
+                            <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="#0b2a4a" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" fill="none" />
                           </svg>
-                        
                         </button>
                         <button
                           className={styles.btnEliminar}
@@ -238,16 +236,13 @@ export default function UsuariosPage() {
                           disabled={esUsuarioActual}
                           title={esUsuarioActual ? 'No puedes eliminar tu propia cuenta' : 'Eliminar usuario'}
                         >
-                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
-                              viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
-                              >
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M4 7l16 0" /><path d="M10 11l0 6" />
-                                <path d="M14 11l0 6" />
-                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-                              </svg>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                            <path d="M3 6h18" stroke="#b91c1c" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="#b91c1c" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                            <path d="M10 11v6" stroke="#b91c1c" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M14 11v6" stroke="#b91c1c" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M9 6l1-2h4l1 2" stroke="#b91c1c" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
                         </button>
                       </div>
                     </td>

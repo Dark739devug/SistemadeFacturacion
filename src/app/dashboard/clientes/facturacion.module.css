@@ -137,27 +137,48 @@
 .factura{ 
   width:100%; 
   border-collapse:collapse; 
-  font-size:0.75rem; 
-}
-
-.factura thead tr{ 
-  background:#3396D3; 
+  font-size:0.9rem;
+  table-layout: auto;
 }
 
 .factura th{ 
   text-align:left; 
-  padding:12px 8px; 
-  color:#fff; 
   font-weight:700; 
-  font-size:0.72rem; 
+  padding:14px 12px; 
+  color:#475569; 
+  font-size:0.88rem; 
+  border-bottom:1px solid #eef2f7; 
 }
 
 .factura td{ 
-  padding:12px 8px; 
+  font-size:0.85rem; 
+  padding:14px 12px;
   border-bottom:1px solid #f3f6f9; 
-  color:#0b1220; 
-  vertical-align:middle; 
+  color:#0f1724; 
+  vertical-align:middle;
 }
+
+/* Estilos para el encabezado de la tabla */
+.factura thead tr{
+  background: #3396D3;
+  box-shadow: 0 8px 20px rgba(77,168,218,0.12);
+}
+
+.factura thead th:first-child{ 
+  border-top-left-radius:10px; 
+}
+
+.factura thead th:last-child{ 
+  border-top-right-radius:10px; 
+}
+
+.factura thead th{ 
+  border-bottom:none; 
+  color: #ffffff; 
+  padding:18px 12px;
+}
+
+.factura th:last-child, .factura td:last-child { text-align:center; }
 
 .factura tbody tr:hover{
   background-color:#f9fafb;
@@ -219,6 +240,9 @@
   background: linear-gradient(90deg,#e6f5ff,#d6ebff); 
 }
 .iconBtn svg{ 
+  width:16px; 
+  height:16px; 
+  display:block;
   stroke:#0b2a4a; 
 }
 
@@ -226,8 +250,41 @@
   background: linear-gradient(90deg,#fff1f2,#ffdede); 
 }
 .iconBtnDanger svg{ 
+  width:16px; 
+  height:16px; 
+  display:block;
   stroke:#b91c1c; 
 }
+
+/* Botones de acción con caja y color (mismo estilo que Productos) */
+.actionBtn, .actionBtnDanger{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  padding:0;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(2,6,23,0.06);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.actionBtn:hover, .actionBtnDanger:hover{ 
+  transform: translateY(-2px); 
+  box-shadow: 0 12px 28px rgba(2,6,23,0.08); 
+}
+
+.actionBtn:focus, .actionBtnDanger:focus{ 
+  outline: 3px solid rgba(59,130,246,0.22);
+}
+
+.actionBtn{ background: linear-gradient(90deg,#e6f5ff,#d6ebff); }
+.actionBtn svg{ stroke:#0b2a4a; }
+
+.actionBtnDanger{ background: linear-gradient(90deg,#fff1f2,#ffdede); }
+.actionBtnDanger svg{ stroke:#b91c1c; }
 
 /* ========== PAGINACIÓN ========== */
 .pagination{ 

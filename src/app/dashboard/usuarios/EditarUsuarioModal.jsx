@@ -25,7 +25,6 @@ function normalizeToken(raw) {
 export default function EditarUsuarioModal({ isOpen, onClose, usuario, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [loadingDatos, setLoadingDatos] = useState(true);
-  const [cambiarContrasena, setCambiarContrasena] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -36,11 +35,6 @@ export default function EditarUsuarioModal({ isOpen, onClose, usuario, onSuccess
   });
 
   const [loginData, setLoginData] = useState({});
-
-  const [passwordData, setPasswordData] = useState({
-    contraseñaNueva: '',
-    confirmarContraseña: ''
-  });
 
   useEffect(() => {
     if (isOpen && usuario) {
@@ -95,11 +89,6 @@ export default function EditarUsuarioModal({ isOpen, onClose, usuario, onSuccess
     }));
   }
 
-  function handlePasswordChange(e) {
-    const { name, value } = e.target;
-    setPasswordData(prev => ({ ...prev, [name]: value }));
-  }
-
   function validarFormulario() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -111,21 +100,6 @@ export default function EditarUsuarioModal({ isOpen, onClose, usuario, onSuccess
     if (!formData.nombre.trim()) {
       toast.error('El nombre es requerido');
       return false;
-    }
-
-    if (cambiarContrasena) {
-      if (!passwordData.contraseñaNueva) {
-        toast.error('Ingresa la nueva contraseña');
-        return false;
-      }
-      if (passwordData.contraseñaNueva.length < 8) {
-        toast.error('La contraseña debe tener mínimo 8 caracteres');
-        return false;
-      }
-      if (passwordData.contraseñaNueva !== passwordData.confirmarContraseña) {
-        toast.error('Las contraseñas no coinciden');
-        return false;
-      }
     }
 
     return true;
@@ -163,16 +137,11 @@ export default function EditarUsuarioModal({ isOpen, onClose, usuario, onSuccess
         payload.login = {
           idLogin: loginData.idLogin,
           email: formData.correo.trim(),
-          usuario: formData.correo.trim(), // Asegurar que sea string, no objeto
+          usuario: formData.correo.trim(),
           ultimoLogin: loginData.ultimoLogin,
           fechaCreacion: loginData.fechaCreacion,
-          passwordHash: cambiarContrasena ? passwordData.contraseñaNueva : loginData.passwordHash
+          passwordHash: loginData.passwordHash
         };
-      }
-
-      // Solo incluir password si se está cambiando la contraseña
-      if (cambiarContrasena) {
-        payload.password = passwordData.contraseñaNueva;
       }
 
       const headers = {
@@ -202,9 +171,6 @@ export default function EditarUsuarioModal({ isOpen, onClose, usuario, onSuccess
       }
 
       toast.success('Usuario actualizado correctamente');
-
-      setCambiarContrasena(false);
-      setPasswordData({ contraseñaNueva: '', confirmarContraseña: '' });
 
       if (onSuccess) onSuccess();
       onClose();
@@ -266,40 +232,6 @@ export default function EditarUsuarioModal({ isOpen, onClose, usuario, onSuccess
                     <span>Usuario activo</span>
                   </label>
                 </div>
-              </div>
-
-              <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Cambiar Contraseña</h3>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={cambiarContrasena}
-                      onChange={e => {
-                        setCambiarContrasena(e.target.checked);
-                        if (!e.target.checked) {
-                          setPasswordData({ contraseñaNueva: '', confirmarContraseña: '' });
-                        }
-                      }}
-                      disabled={loading}
-                    />
-                    <span>¿Cambiar contraseña?</span>
-                  </label>
-                </div>
-
-                {cambiarContrasena && (
-                  <>
-                    <div className={styles.fieldGroup}>
-                      <label>Nueva contraseña *</label>
-                      <input type="password" name="contraseñaNueva" value={passwordData.contraseñaNueva} onChange={handlePasswordChange} disabled={loading} />
-                    </div>
-
-                    <div className={styles.fieldGroup}>
-                      <label>Confirmar contraseña *</label>
-                      <input type="password" name="confirmarContraseña" value={passwordData.confirmarContraseña} onChange={handlePasswordChange} disabled={loading} />
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 

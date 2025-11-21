@@ -172,9 +172,8 @@ return (
 
     <button type="submit"className={styles.button}>Iniciar sesión</button>
       <div className={styles.linksContainer}>
-    <a href="/recuperar1" className={styles.link}>¿Olvidaste tu contraseña?</a>
     <a href="/registro" className={styles.link}>¿Crear  cuenta?</a>
-    <a href="/recuperar3" className={styles.link}>¿Olvidaste tu correo electrónico de Agencia Virtual?</a>
+   
   </div>
   </form>
    <ToastContainer position="top-center" />

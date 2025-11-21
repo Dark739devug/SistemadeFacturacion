@@ -284,7 +284,7 @@
   text-align: left;
   padding: 10px 8px;
   background: #f8f9fa;
-  color: #64748b;
+  color: #0b1220;
   font-size: 0.85rem;
   font-weight: 600;
   border-bottom: 2px solid #e2e8f0;
@@ -294,6 +294,7 @@
   padding: 10px 8px;
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.9rem;
+  color: #0b1220;
 }
 
 .deleteBtn{
@@ -339,7 +340,8 @@
 .resumenSection p{
   margin: 8px 0;
   font-size: 0.9rem;
-  color: #4b5563;
+  color: #0b1220;
+  font-weight: 500;
 }
 
 .totalesGrid{
@@ -356,8 +358,9 @@
 }
 
 .totalesGrid span{
-  color: #64748b;
+  color: #0b1220;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .totalesGrid strong{
@@ -406,7 +409,8 @@
   padding: 8px 0;
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.9rem;
-  color: #4b5563;
+  color: #0b1220;
+  font-weight: 500;
 }
 
 .buttonContainer{

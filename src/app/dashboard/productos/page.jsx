@@ -137,8 +137,24 @@ export default function ProductosPage() {
         fechaCreacion: i.fechaCreacion,
         activo: i.activo
       }));
-  setAllProductos(mapped);
-  setProductos(mapped);
+
+      // Intentar ordenar por fecha de creación descendente si existe, si no por id descendente
+      const sorted = mapped.slice().sort((a, b) => {
+        // if both have fechaCreacion, compare as dates
+        if (a.fechaCreacion && b.fechaCreacion) {
+          const da = Date.parse(a.fechaCreacion) || 0;
+          const db = Date.parse(b.fechaCreacion) || 0;
+          if (db !== da) return db - da;
+        }
+        // fallback: if both ids are numeric, sort by id desc
+        const na = Number(a.id);
+        const nb = Number(b.id);
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) return nb - na;
+        return 0;
+      });
+
+      setAllProductos(sorted);
+      setProductos(sorted);
     } catch (err) {
       console.error('Error ', err);
       setError('No se pudieron cargar los productos.');
@@ -457,41 +473,79 @@ export default function ProductosPage() {
     return errors;
   }
 
-  // función para eliminar un producto 
-  // solo el rol de administrador puede eliminar productos
+  // función para desactivar un producto
+  // solo el rol de administrador puede desactivar productos
   async function handleDelete(id) {
-    if (!confirm('¿Eliminar este producto?')) return;
+    console.log('handleDelete (desactivar) called with id:', id, 'userRole:', userRole);
+    const proceed = confirm('¿Desactivar este producto?');
+    console.log('confirm result:', proceed);
+    if (!proceed) {
+      toast.info('Desactivación cancelada');
+      return;
+    }
+
     try {
       const rawToken = localStorage.getItem('accessToken') || localStorage.getItem('token') || sessionStorage.getItem('accessToken') || sessionStorage.getItem('token');
       const token = normalizeToken(rawToken);
+      console.log('token (normalized):', token);
       const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
-    // si el rol no es (administrador) no permitir eliminar
+
       if (!token) {
         toast.error('No autorizado. Por favor inicie sesión.');
         router.push('/login');
         return;
       }
-      // realizar la solicitud DELETE al endpoint de productos
+
+      // Buscar el producto completo en el estado actual
+      const producto = productos.find(p => p.id === id || p.codigo === id);
+      if (!producto) {
+        toast.error('Producto no encontrado');
+        return;
+      }
+
+      // Construir el payload con todos los campos del producto y activo=false
+      const payload = {
+        idProducto: producto.id,
+        codigoProducto: producto.codigo || '',
+        nombreProducto: producto.nombre || '',
+        descripcion: producto.descripcion || '',
+        idCategoria: producto.idCategoria,
+        idEstablecimiento: producto.idEstablecimiento,
+        precioUnitario: Number(producto.precio) || 0,
+        stockActual: Number(producto.stock) || 0,
+        unidadMedida: producto.unidadMedida || '',
+        aplicaIva: producto.aplicaIva === true,
+        activo: false // <-- Desactivar el producto
+      };
+
+      console.log('Calling PUT para desactivar', `${API_BASE}/api/productos/${id}`, payload);
       const res = await fetch(`${API_BASE}/api/productos/${id}`, {
-        method: 'DELETE',
-        headers
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(payload)
       });
+
+      let respText = null;
+      try { respText = await res.text(); } catch (e) { /* ignore */ }
+      console.log('PUT response status:', res.status, 'body:', respText);
+
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           toast.error('No autorizado. Por favor inicie sesión.');
           router.push('/login');
           return;
         }
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
+        throw new Error(respText || `HTTP ${res.status}`);
       }
-      toast.success('Producto eliminado');
-      // actualizar lista localmente
-      setProductos(prev => prev.filter(p => p.id !== id));
+
+      toast.success('Producto desactivado');
+      // actualizar estado local: marcar activo = false
+      setProductos(prev => prev.map(p => ((p.id === id || p.codigo === id) ? { ...p, activo: false } : p)));
+      setAllProductos(prev => prev.map(p => ((p.id === id || p.codigo === id) ? { ...p, activo: false } : p)));
     } catch (err) {
-      console.error('Delete error', err);
-      toast.error('No se pudo eliminar el producto.');
+      console.error('Desactivar error', err);
+      toast.error('No se pudo desactivar el producto. Revisa la consola y la pestaña Network.');
     }
   }
 
@@ -697,20 +751,33 @@ export default function ProductosPage() {
                           </svg>
                         </button>
                         {Number(userRole) === 1 && (
-                          <button
-                            aria-label="Eliminar"
-                            className={`${styles.iconBtnDanger} ${styles.actionBtnDanger}`}
-                            onClick={() => handleDelete(p.id || p.codigo)}
-                            title="Eliminar producto"
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                              <path d="M3 6h18" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M10 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M14 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M9 6l1-2h4l1 2" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </button>
+                          p && p.activo ? (
+                            <button
+                              aria-label="Desactivar"
+                              className={`${styles.iconBtnDanger} ${styles.actionBtnDanger}`}
+                              onClick={() => { console.log('Desactivar click', { id: p.id, codigo: p.codigo, product: p }); handleDelete(p.id || p.codigo); }}
+                              title="Desactivar producto"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                                <path d="M3 6h18" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M10 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M14 11v6" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M9 6l1-2h4l1 2" stroke="#dc2626" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button>
+                          ) : (
+                            <button
+                              aria-label="Activar"
+                              className={`${styles.iconBtn} ${styles.actionBtn}`}
+                              onClick={() => { console.log('Activar click', { id: p.id, codigo: p.codigo, product: p }); handleActivate(p.id || p.codigo); }}
+                              title="Activar producto"
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                                <path d="M20 6L9 17l-5-5" stroke="#065f46" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button>
+                          )
                         )}
                       </td>
                     </tr>
@@ -1110,8 +1177,81 @@ export default function ProductosPage() {
                             return;
                           }
 
-                          // refrescar lista
-                          await fetchProductos();
+                          // Si la API devolvió el producto creado, normalizarlo y preprenderlo.
+                          // Si no, crear un objeto temporal a partir del payload y preprenderlo igualmente.
+                          let mapped = null;
+                          if (json && typeof json === 'object') {
+                            const created = Array.isArray(json) ? (json[0] || null) : json;
+                            if (created) {
+                              mapped = {
+                                id: created.idProducto ?? created.id ?? null,
+                                codigo: created.codigoProducto ?? created.codigo ?? payload.codigoProducto,
+                                nombre: created.nombreProducto ?? created.nombre ?? payload.nombreProducto,
+                                descripcion: created.descripcion ?? created.descripcionProducto ?? payload.descripcion,
+                                categoria: created.nombreCategoria ?? created.categoria ?? undefined,
+                                idCategoria: created.idCategoria ?? created.categoriaId ?? null,
+                                establecimiento: created.nombreEstablecimiento ?? created.nombreComercial ?? created.establecimiento ?? undefined,
+                                idEstablecimiento: created.idEstablecimiento ?? created.establecimientoId ?? null,
+                                precio: (created.precioUnitario ?? created.precio) || payload.precioUnitario || 0,
+                                stock: created.stockActual ?? created.stock ?? payload.stockActual ?? 0,
+                                unidadMedida: created.unidadMedida ?? payload.unidadMedida,
+                                aplicaIva: typeof created.aplicaIva !== 'undefined' ? created.aplicaIva : !!payload.aplicaIva,
+                                fechaCreacion: created.fechaCreacion ?? null,
+                                activo: typeof created.activo === 'undefined' ? true : !!created.activo
+                              };
+                            }
+                          }
+
+                          // Si no vino objeto en la respuesta, crear un objeto temporal desde el payload
+                          if (!mapped) {
+                            const tempId = `temp-${Date.now()}`;
+                            mapped = {
+                              id: tempId,
+                              codigo: payload.codigoProducto,
+                              nombre: payload.nombreProducto,
+                              descripcion: payload.descripcion || '',
+                              categoria: payload.categoria || undefined,
+                              idCategoria: payload.idCategoria ?? null,
+                              establecimiento: payload.establecimiento || undefined,
+                              idEstablecimiento: payload.idEstablecimiento ?? null,
+                              precio: payload.precioUnitario || 0,
+                              stock: payload.stockActual || 0,
+                              unidadMedida: payload.unidadMedida || '',
+                              aplicaIva: !!payload.aplicaIva,
+                              fechaCreacion: null,
+                              activo: true,
+                              __temp: true
+                            };
+                          }
+
+                          // Preprender y evitar duplicados usando id cuando exista, si no usar 'codigo' como clave
+                          setAllProductos(prev => {
+                            const filtered = prev.filter(it => {
+                              if (mapped.id != null && String(mapped.id).startsWith('temp-')) {
+                                // temp id: dedupe by codigo
+                                return (it.codigo || '') !== (mapped.codigo || '');
+                              }
+                              if (mapped.id != null) return it.id !== mapped.id;
+                              return (it.codigo || '') !== (mapped.codigo || '');
+                            });
+                            return [mapped, ...filtered];
+                          });
+
+                          setProductos(prev => {
+                            const filtered = prev.filter(it => {
+                              if (mapped.id != null && String(mapped.id).startsWith('temp-')) {
+                                return (it.codigo || '') !== (mapped.codigo || '');
+                              }
+                              if (mapped.id != null) return it.id !== mapped.id;
+                              return (it.codigo || '') !== (mapped.codigo || '');
+                            });
+                            return [mapped, ...filtered];
+                          });
+
+                          setPage(1);
+                          // refrescar en segundo plano para sincronizar y eliminar temporales
+                          fetchProductos().catch(e => console.warn('Refetch tras crear producto falló', e));
+
                           toast.success('Producto creado');
                           setIsCreateModalOpen(false);
                           // resetear formulario

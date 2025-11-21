@@ -44,23 +44,14 @@ export default function Sidebar() {
   const isActive = (key) => active === key;
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      
-      if (token) {
-        await fetch('http://localhost:9090/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    } finally {
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    
+    // Pequeño delay para mostrar la animación
+    setTimeout(() => {
+      // Limpiar inmediatamente el almacenamiento local
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('accessToken');
@@ -69,8 +60,26 @@ export default function Sidebar() {
         localStorage.removeItem('rol');
         sessionStorage.clear();
       }
+      
+      // Redirigir
       router.push('/login');
-    }
+      
+      // Llamar al endpoint de logout en segundo plano (sin esperar)
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) {
+          fetch('http://localhost:9090/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }).catch(() => {}); // Ignorar errores
+        }
+      } catch (error) {
+        // Ignorar errores silenciosamente
+      }
+    }, 500);
   };
 
   const Icon = ({ name }) => {
@@ -150,8 +159,8 @@ export default function Sidebar() {
           
           <div className={styles.profileInfo}>
             <div style={{fontWeight:700}}>{nombre || 'Usuario'}</div>
-            <div style={{fontSize:'.85rem', color:'var(--muted)'}}>{email || 'email@ejemplo.com'}</div>
-            <div style={{fontSize:'.75rem', color:'var(--muted)'}}>{rol || 'Sin rol'}</div>
+            <div style={{fontSize:'.85rem', color:'rgba(255, 255, 255, 0.9)'}}>{email || 'email@ejemplo.com'}</div>
+            <div style={{fontSize:'.75rem', color:'rgba(255, 255, 255, 0.85)'}}>{rol || 'Sin rol'}</div>
           </div>
         </div>
 
@@ -193,36 +202,13 @@ export default function Sidebar() {
               Cerrar sesión
             </button>
           </div>
-
-          <div className={styles.footerContainer}>
-            <button type="button" className={styles.footerItem} >
-              <svg xmlns="http://www.w3.org/2000/svg" 
-                className={styles.icon}
-                width="24" 
-                height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="1.75" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-              >
-                <path stroke="none" 
-                  d="M0 0h24v24H0z" 
-                  fill="none"/>
-                <path d="M19.875 6.27a2.225 2.225 0 0 1 1.125 1.948v7.284c0 .809 -.443 1.555 -1.158 1.948l-6.75 4.27a2.269 2.269 0 0 1 -2.184 0l-6.75 -4.27a2.225 2.225 0 0 1 -1.158 -1.948v-7.285c0 -.809 .443 -1.554 1.158 -1.947l6.75 -3.98a2.33 2.33 0 0 1 2.25 0l6.75 3.98h-.033z" />
-                <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
-              </svg>
-              Configuración 
-            </button>
-          </div>
         </div>
       </aside>
 
-      {showLogoutConfirm && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBox}>
-            <div style={{textAlign: 'center', marginBottom: '1rem'}}>
+      {showLogoutConfirm && !isLoggingOut && (
+        <div className={styles.logoutOverlay} onClick={() => setShowLogoutConfirm(false)}>
+          <div className={styles.logoutModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.logoutIconWrap}>
               <svg xmlns="http://www.w3.org/2000/svg" 
                 width="48" 
                 height="48" 
@@ -232,7 +218,6 @@ export default function Sidebar() {
                 strokeWidth="2" 
                 strokeLinecap="round" 
                 strokeLinejoin="round"
-                style={{margin: '0 auto'}}
               >
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M12 9v4" />
@@ -240,40 +225,35 @@ export default function Sidebar() {
                 <path d="M12 16h.01" />
               </svg>
             </div>
-            <h3 style={{marginBottom: '0.5rem', fontSize: '1.25rem', fontWeight: '600'}}>¿Cerrar sesión?</h3>
-            <p style={{color: 'var(--muted)', marginBottom: '1.5rem'}}>¿Estás seguro que deseas cerrar sesión?</p>
-            <div style={{display:'flex', gap: '0.5rem', justifyContent:'flex-end'}}>
+            <h3 className={styles.logoutTitle}>¿Cerrar sesión?</h3>
+            <p className={styles.logoutText}>¿Estás seguro que deseas cerrar sesión?</p>
+            <div className={styles.logoutActions}>
               <button 
                 onClick={() => setShowLogoutConfirm(false)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  background: 'white',
-                  color: '#374151',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500'
-                }}
+                className={styles.logoutCancelBtn}
               >
                 Cancelar
               </button>
               <button 
                 onClick={handleLogout}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '0.375rem',
-                  border: 'none',
-                  background: '#ef4444',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500'
-                }}
+                className={styles.logoutConfirmBtn}
               >
                 Cerrar sesión
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isLoggingOut && (
+        <div className={styles.logoutOverlay}>
+          <div className={styles.logoutProgressModal}>
+            <div className={styles.spinner}>
+              <svg className={styles.spinnerSvg} viewBox="0 0 50 50">
+                <circle className={styles.spinnerCircle} cx="25" cy="25" r="20" fill="none" strokeWidth="4"></circle>
+              </svg>
+            </div>
+            <p className={styles.logoutProgressText}>Cerrando sesión...</p>
           </div>
         </div>
       )}

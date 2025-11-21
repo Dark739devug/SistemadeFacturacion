@@ -184,6 +184,7 @@
   box-sizing: border-box;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: #0b1220;
 }
 
 .confirmInput:focus{
