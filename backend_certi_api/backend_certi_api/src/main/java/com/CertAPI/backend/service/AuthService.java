@@ -3,7 +3,7 @@ package com.CertAPI.backend.service;
 import com.CertAPI.backend.dto.LoginRequestDTO;
 import com.CertAPI.backend.dto.LoginResponseDTO;
 import com.CertAPI.backend.dto.RegisterRequestDTO;
-import com.CertAPI.backend.dto.UsuarioUpdateDTO; // <--- Importante
+import com.CertAPI.backend.dto.UsuarioUpdateDTO;
 import com.CertAPI.backend.exception.BadRequestException;
 import com.CertAPI.backend.exception.ResourceNotFoundException;
 import com.CertAPI.backend.model.LoginSesion;
@@ -78,8 +78,18 @@ public class AuthService {
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException("El email ya está registrado");
         }
+
+        // ==============================================================
+        // BÚSQUEDA MEJORADA Y SEGURA DEL ROL
+        // ==============================================================
         Rol rol = rolRepository.findById(request.getIdRol())
-                .orElseThrow(() -> new BadRequestException("Rol no encontrado"));
+                .orElseThrow(() -> new BadRequestException("Rol con ID " + request.getIdRol() + " no encontrado"));
+
+        // Verificación extra de sanidad (aunque el orElseThrow ya lo maneja)
+        if (rol == null) {
+            throw new BadRequestException("El rol es nulo después de la búsqueda, lo que indica un problema interno de la DB.");
+        }
+        // ==============================================================
 
         Usuario usuario = Usuario.builder()
                 .username(request.getUsername())
@@ -113,22 +123,18 @@ public class AuthService {
         loginSesionRepository.save(sesion);
     }
 
-    // ================= NUEVO MÉTODO PARA EDITAR =================
     @Transactional
     public Usuario actualizarUsuario(Long id, UsuarioUpdateDTO datos) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        // Actualizamos campos básicos
         usuario.setNombreCompleto(datos.getNombreCompleto());
         usuario.setEmail(datos.getEmail());
 
-        // Actualizamos el Rol
         Rol rol = rolRepository.findById(datos.getIdRol())
                 .orElseThrow(() -> new BadRequestException("Rol no encontrado"));
         usuario.setRol(rol);
 
-        // Solo actualizamos contraseña si viene algo en el campo
         if (datos.getPassword() != null && !datos.getPassword().trim().isEmpty()) {
             usuario.setPasswordHash(passwordEncoder.encode(datos.getPassword()));
         }
