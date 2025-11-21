@@ -9,27 +9,20 @@ import {
 import "./Certificar.css"
 
 const Certificar = () => {
-  // Estados de UI
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(false)
   
-  // Datos
   const [emisores, setEmisores] = useState([])
   const [emisorSeleccionado, setEmisorSeleccionado] = useState("")
   
-  // Formulario Manual
   const [formData, setFormData] = useState({
     xmlDTE: "",
     nitEmisor: "",
   })
   
-  // Resultados
   const [result, setResult] = useState(null)
   const fileInputRef = useRef(null)
 
-  // ---------------------------------------------------------
-  // 1. CARGA INICIAL DE EMISORES
-  // ---------------------------------------------------------
   useEffect(() => {
     loadEmisores()
   }, [])
@@ -48,22 +41,17 @@ const Certificar = () => {
     }
   }
 
-  // ---------------------------------------------------------
-  // 2. PARSER XML ROBUSTO (Soporta namespaces gte:)
-  // ---------------------------------------------------------
   const extraerNitDelXML = (xmlString) => {
     try {
       const parser = new DOMParser()
       const xmlDoc = parser.parseFromString(xmlString, "text/xml")
       
-      // Buscamos la etiqueta Emisor con o sin namespace gte:
       const emisorNode = 
         xmlDoc.getElementsByTagName("gte:Emisor")[0] || 
         xmlDoc.getElementsByTagName("Emisor")[0]
 
       if (!emisorNode) return null
 
-      // Buscamos el atributo NITEmisor
       const nit = emisorNode.getAttribute("NITEmisor")
       return nit
     } catch (e) {
@@ -72,9 +60,6 @@ const Certificar = () => {
     }
   }
 
-  // ---------------------------------------------------------
-  // 3. MANEJO DEL FORMULARIO
-  // ---------------------------------------------------------
   const handleXmlChange = (e) => {
     const xml = e.target.value
     const nitDetectado = extraerNitDelXML(xml)
@@ -82,16 +67,13 @@ const Certificar = () => {
     setFormData(prev => ({
       ...prev,
       xmlDTE: xml,
-      // Si detectamos NIT en el XML, lo pre-seleccionamos en el estado local
-      // Pero NO forzamos el dropdown si el usuario ya eligió otro manualmente
       nitEmisor: nitDetectado || prev.nitEmisor
     }))
 
-    // Intentar sincronizar el dropdown si encontramos el NIT
     if (nitDetectado) {
       const emisorEncontrado = emisores.find(e => e.nitEmisor === nitDetectado)
       if (emisorEncontrado) {
-        setEmisorSeleccionado(emisorEncontrado.nitEmisor) // Usamos NIT como value del select
+        setEmisorSeleccionado(emisorEncontrado.nitEmisor)
       }
     }
   }
@@ -103,19 +85,14 @@ const Certificar = () => {
     const reader = new FileReader()
     reader.onload = (event) => {
       const xmlContent = event.target.result
-      // Simulamos el evento de cambio manual
       handleXmlChange({ target: { value: xmlContent } })
     }
     reader.readAsText(file)
   }
 
-  // ---------------------------------------------------------
-  // 4. ENVIAR A CERTIFICAR (POST AL BACKEND)
-  // ---------------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validaciones
     if (!formData.xmlDTE.trim()) return alert("El XML es obligatorio")
     if (!formData.nitEmisor) return alert("Debe haber un NIT de emisor asociado")
 
@@ -123,7 +100,6 @@ const Certificar = () => {
     setResult(null)
 
     try {
-      // Payload exacto para tu DTERequestDTO
       const payload = {
         nitEmisor: formData.nitEmisor,
         xmlDTE: formData.xmlDTE
@@ -131,7 +107,6 @@ const Certificar = () => {
 
       console.log("Enviando a CertAPI...", payload)
 
-      // LLAMADA AL CONTROLLER QUE ARREGLAMOS
       const res = await api.post("/certificacion/certificar", payload)
 
       setResult({ 
@@ -142,9 +117,9 @@ const Certificar = () => {
     } catch (error) {
       console.error(error)
       const msg = error?.response?.data?.mensaje || 
-                  error?.response?.data?.message || // Por si el GlobalExceptionHandler responde
-                  error?.message || 
-                  "Error desconocido al certificar"
+                   error?.response?.data?.message || 
+                   error?.message || 
+                   "Error desconocido al certificar"
       
       setResult({ success: false, message: msg })
     } finally {
@@ -152,9 +127,6 @@ const Certificar = () => {
     }
   }
 
-  // ---------------------------------------------------------
-  // 5. UTILIDADES UI
-  // ---------------------------------------------------------
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
     alert("Copiado al portapapeles")
@@ -181,10 +153,8 @@ const Certificar = () => {
 
       <div className="certificar-layout">
         
-        {/* COLUMNA IZQUIERDA: FORMULARIO */}
         <div className="form-section">
           
-          {/* 1. SELECCIÓN DE EMISOR */}
           <div className="card-panel">
             <div className="panel-header">
               <h3>1. Emisor Firmante</h3>
@@ -215,7 +185,6 @@ const Certificar = () => {
             </div>
           </div>
 
-          {/* 2. CARGA DE XML */}
           <div className="card-panel">
             <div className="panel-header">
               <h3>2. Documento XML</h3>
@@ -268,7 +237,6 @@ const Certificar = () => {
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: RESULTADOS */}
         <div className="result-section-container">
           {!result && (
             <div className="empty-state">

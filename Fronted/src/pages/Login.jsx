@@ -6,7 +6,6 @@ import { useAuth } from "../context/AuthContext"
 import { Lock, User } from "lucide-react"
 import "./Login.css"
 
-// --- LOGO ELEGANTE (SVG Personalizado) ---
 const CustomLogo = () => (
   <svg 
     width="90" 
